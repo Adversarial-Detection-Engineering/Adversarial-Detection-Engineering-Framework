@@ -75,6 +75,18 @@ Then, continue on with the Bug Likelihoot Test.
       - Rules using `contains|all`, multiple `AND` conditions, or expecting a single event to include an entire piped command can fail because shell operators (`|`, `&`) split the execution across multiple process creation events. This leads to **False Negatives** even when the attack occurs exactly as intended.  
 
 
+- [ ] Does the rule alert on, or exclude by, the parent process (e.g. `ParentImage`, `process.parent.name`)?
+
+      - ADE3‑05 – Context Development (Lineage Spoofing)
+      - The attacker can assign an arbitrary parent at process creation (Parent PID spoofing), so parent‑child conditions miss and parent‑based exclusions can be matched on purpose.
+
+
+- [ ] Does the rule reference a field that some target log sources or backends name differently, don’t populate, or that sits inside a `not` filter?
+
+      - ADE4‑04 – Logic Manipulation (Field Mismapping & Semantics)
+      - A field that doesn’t resolve in the transpiled query matches nothing; an absent field inside `selection and not filter` can invert the rule outcome depending on backend null‑handling.
+
+
 - [ ] Does the rule scope exclude privileged accounts such as root or administrator, yet isn’t for privilege escalation?
       
       - ADE4‑03 – Logic Manipulation (Incorrect Expression)

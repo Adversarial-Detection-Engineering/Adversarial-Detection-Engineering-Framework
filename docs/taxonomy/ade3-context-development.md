@@ -78,6 +78,31 @@ Rather than changing the primary malicious action, the attacker shapes the **sur
 - [Detection Pitfalls by Daniel Koifman](https://detect.fyi/detection-pitfalls-you-might-be-sleeping-on-52b5a3d9a0c8)
 - [Unintentional Evasion: Command Line Logging Gaps by Kostas](https://detect.fyi/unintentional-evasion-investigating-how-cmd-fragmentation-hampers-detection-response-e5d7b465758e)
 
+---
+
+### ADE3-05: Context Development - Lineage Spoofing
+
+**Definition:** Detection logic relies on the **parent-process relationship** (e.g., "PowerShell spawned by Word is suspicious") while assuming the logged parent is truthful. Using a documented Windows API (`CreateProcess` with `PROC_THREAD_ATTRIBUTE_PARENT_PROCESS`), an attacker assigns an arbitrary parent to the process they create. The event is still generated, but the parent fields the rule trusts (`ParentImage`, `ParentProcessId`, `ParentCommandLine`, `process.parent.*`) are poisoned, resulting in a False Negative.
+
+**Common Scenarios:**
+- Parent-child rules: "alert if `cmd.exe`/`powershell.exe` is spawned by `outlook.exe`" → attacker spoofs the parent to `explorer.exe`
+- Parent-based exclusions: "ignore `rundll32.exe` launched by `explorer.exe`" → attacker spoofs exactly the excluded parent
+- Allowlist-style rules: "alert if `cmd.exe` is NOT spawned by `explorer.exe`" → attacker spoofs the expected parent
+- Blending into the process tree by parenting to long-lived processes (`explorer.exe`, `svchost.exe`)
+
+**Why It Works:**
+- The telemetry exists and the event fires; only a contextual field has been falsified
+- Process-creation telemetry such as Sysmon Event ID 1 records the spoofed parent in `ParentProcessId`, `ParentImage`, and `ParentCommandLine`
+- The technique is built into common C2 tooling (e.g., Cobalt Strike's `ppid` command), so it costs the attacker nothing (MITRE ATT&CK [T1134.004](https://attack.mitre.org/techniques/T1134/004/))
+- Rules treat parent lineage as ground truth for both alerting and exclusion
+
+**Where the truth still lives:**
+- ETW `Microsoft-Windows-Kernel-Process` process-start events: the `EventHeader.ProcessId` is the real creator, while the payload's parent PID is the spoofed one
+- EDR telemetry that exposes the real creator separately, e.g., Elastic Defend's `process.parent.Ext.real.pid`
+- Windows Security Event 4688 `Creator Process ID` / `Creator Process Name` is commonly used as a cross-check source ([MITRE ATT&CK detection guidance](https://attack.mitre.org/techniques/T1134/004/)); validate in your lab what it records under spoofing before relying on it as ground truth
+
+**Relationship to ADE4:** Parent-based filter exclusions are directly exploitable through lineage spoofing. When the spoofed parent is the excluded value, this is ADE3-05 feeding [ADE4-01 Gate Inversion](ade4-logic-manipulation.md#ade4-01-logic-manipulation---gate-inversion) / [ADE4-02 Conjunction Inversion](ade4-logic-manipulation.md#ade4-02-logic-manipulation---conjunction-inversion).
+
 ## Examples
 
 ### Real-World Detection Logic Bugs
@@ -186,6 +211,27 @@ CommandLine|contains|all:
 - Piped commands
 - Chained execution
 
+### ADE3-05 Patterns
+
+**Parent-child matching:**
+```yaml
+Image|endswith: '\powershell.exe'
+ParentImage|endswith: '\winword.exe'
+```
+
+**Parent-based exclusions:**
+```yaml
+filter:
+    ParentImage|endswith: '\explorer.exe'
+condition: selection and not filter
+```
+
+**Parent fields as ground truth:**
+```
+process.parent.name == "outlook.exe"
+ParentProcessId / ParentCommandLine used for alerting or suppression
+```
+
 ## Why Context Development Is Powerful
 
 **Key Insight:** ADE3 bugs often don't require the attacker to know detection rules exist.
@@ -194,6 +240,7 @@ CommandLine|contains|all:
 **ADE3-02:** Attackers naturally do reconnaissance before attacking
 **ADE3-03:** Operational security naturally involves timing spacing
 **ADE3-04:** Piped commands are **standard shell usage** - not intentional evasion
+**ADE3-05:** Parent PID spoofing is a **built-in feature of common C2 frameworks** - one flag, not a bespoke evasion
 
 ## Related Bug Categories
 
@@ -201,6 +248,7 @@ ADE3 often appears alongside:
 - **ADE1-01 (Substring Manipulation):** Context manipulation often involves string changes
 - **ADE2-01 (Omit Alternatives - Method/Binary):** Cloned binaries are "alternative" execution methods
 - **ADE4-01 (Gate Inversion):** Timing/aggregation manipulation can flip Boolean gates
+- **ADE4-01 / ADE4-02 (Gate / Conjunction Inversion):** Lineage spoofing (ADE3-05) poisons parent fields used in exclusion filters
 
 ## Testing Your Rules
 
@@ -225,5 +273,10 @@ ADE3 often appears alongside:
 - ✅ Does your rule use multi-substring matching (`contains|all`)?
 - ✅ Are you matching against command-line fields?
 - ✅ Could shell operators fragment the command?
+
+**For ADE3-05:**
+- ✅ Does your rule alert on, or exclude by, the parent process (`ParentImage`, `process.parent.*`)?
+- ✅ Can the attacker create processes with a chosen parent at the assumed privilege level?
+- ✅ Does your telemetry expose the real creator (ETW event header, EDR real-parent field), or only the reported parent?
 
 If you answered "yes" to any category's questions, your rule likely has an ADE3 vulnerability.

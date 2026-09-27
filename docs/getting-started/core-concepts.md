@@ -96,14 +96,14 @@ When there is **prior knowledge** of a bug in detection logic, coupled with a wo
 ### ADE3: Context Development
 **Attacker shapes contextual data** that detection logic depends on.
 
-**Core mechanism:** Preparatory actions that poison aggregations, timing, or process metadata
+**Core mechanism:** Preparatory actions that poison aggregations, timing, or process metadata (including spoofed parent lineage)
 
 **Example:** Cloning `/usr/bin/wget` to `/tmp/foo` bypasses process name checks
 
 ### ADE4: Logic Manipulation
 **Attacker exploits Boolean logic flaws** in detection conditions.
 
-**Core mechanism:** Manipulating inputs to flip AND/OR/NOT evaluations
+**Core mechanism:** Manipulating inputs to flip AND/OR/NOT evaluations, or conditions that silently fail because a field is misnamed, unavailable, or null
 
 **Example:** De Morgan's Law violations allowing negation inversion
 
@@ -229,8 +229,8 @@ Attacker takes **preparatory steps** to manipulate contextual data that detectio
 
 1. **ADE1:** Can attackers manipulate strings I'm matching?
 2. **ADE2:** Have I enumerated ALL methods that achieve this outcome?
-3. **ADE3:** Can attackers shape context (process names, timing, aggregations)?
-4. **ADE4:** Are my Boolean logic conditions sound? Any De Morgan's Law issues?
+3. **ADE3:** Can attackers shape context (process names, timing, aggregations, parent lineage)?
+4. **ADE4:** Are my Boolean logic conditions sound? Any De Morgan's Law issues? Does every field exist and populate on every backend the rule runs on?
 
 **If unsure on any:** Apply full ADE analysis before deployment.
 
