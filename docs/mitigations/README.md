@@ -258,6 +258,16 @@ detection:
   condition: selection
 ```
 
+### Mitigation 3: Don't Treat Reported Parent Lineage as Ground Truth
+
+**Problem**: Parent PID spoofing (ADE3-05) lets an attacker choose the parent recorded for a new process. Rules that alert on a suspicious parent miss, and rules that exclude a benign parent can be satisfied on purpose.
+
+**Best Practice**:
+1. **Use a source that records the real creator**: ETW `Microsoft-Windows-Kernel-Process` exposes the true caller in `EventHeader.ProcessId`; some EDRs surface it separately (e.g., Elastic Defend `process.parent.Ext.real.pid`). Alert when the real creator and the reported parent differ.
+2. **Never exclude on parent alone**: pair parent-based exclusions with fields the attacker cannot choose at process creation, or drop the exclusion and tune instead.
+3. **Keep a behavioral rule for the child**: detect what the child process does, so a spoofed parent removes context but not coverage.
+4. **Validate cross-source signals in a lab**: confirm what each source (Sysmon, Security 4688, ETW, EDR) records under spoofing before building a correlation on it.
+
 ---
 
 ## Logic Manipulation
@@ -306,6 +316,30 @@ detection:
 - Regularly review filter effectiveness
 - Consider removing filters and tuning instead
 
+### Mitigation 3: Verify Fields Against the Deployed Telemetry
+
+**Problem**: A misnamed, unavailable, or absent field (ADE4-04) does not error — the condition silently matches nothing, or inverts a negated filter.
+
+**Best Practice**:
+- **Review the transpiled query**, not the Sigma source, on every target backend
+- **Pin `logsource.service`** when a rule depends on a source-specific field (e.g., `OriginalFileName` is Sysmon-only)
+- **OR in a fallback** for sources without the field (e.g., `OriginalFileName` or `Image|endswith`)
+- **Guard every negated optional field** with a presence check so absence cannot flip the outcome:
+
+```yaml
+detection:
+  selection:
+    Image|endswith: '\rundll32.exe'
+  filter_benign_parent:
+    ParentImage|endswith: '\explorer.exe'
+  filter_parent_present:
+    ParentImage|exists: true
+  condition: selection and not (filter_benign_parent and filter_parent_present)
+```
+
+- **Probe field population** per fleet segment; a field that is always null on a segment means the rule is blind there
+- **Replay an atomic test** per backend, and flag rules that have never fired since deployment for review
+
 ---
 
 ## Defense-in-Depth Strategies
@@ -331,7 +365,7 @@ detection:
 ### Layer 4: Anomaly Detection
 - Baseline normal process behaviors
 - Flag deviations from typical execution patterns
-- Monitor for unusual parent-child relationships
+- Monitor for unusual parent-child relationships, and for mismatches between reported and real parent
 
 ### Layer 5: Threat Hunting
 - Proactive searches for bypass variations

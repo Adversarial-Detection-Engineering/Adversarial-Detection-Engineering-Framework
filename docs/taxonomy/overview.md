@@ -24,7 +24,7 @@ Other solutions and their rulesets have not yet been reviewed as part of creatin
 
 ## ADE Detection Logic Bug Taxonomy
 
-The full taxonomy consists of 4 categories, and 12 sub-categories
+The full taxonomy consists of 4 categories, and 15 sub-categories
 - Each category is given a label, such as ADE1, ADE2, ...., ADE4.
 - Subcategories are labels with their subcategory number. E.g ADE1-02, ADE3-03 This is for mappings to rules.
 
@@ -41,11 +41,13 @@ The full taxonomy consists of 4 categories, and 12 sub-categories
     ├─ ADE3-01 Process Cloning
     ├─ ADE3-02 Aggregation Hijacking
     ├─ ADE3-03 Timing and Scheduling
-    └─ ADE3-04 Event Fragmentation
+    ├─ ADE3-04 Event Fragmentation
+    └─ ADE3-05 Lineage Spoofing
 🌳 ADE4 – Logic Manipulation
     ├─ ADE4-01 Gate Inversion
     ├─ ADE4-02 Conjunction Inversion
-    └─ ADE4-03 Incorrect Expression
+    ├─ ADE4-03 Incorrect Expression
+    └─ ADE4-04 Field Mismapping & Semantics
 ```
 
 ## Category Summaries
@@ -82,6 +84,7 @@ Attacker takes additional steps to **manipulate or poison contextual data** used
 - **[ADE3-02 Aggregation Hijacking](ade3-context-development.md#ade3-02-context-development---aggregation-hijacking)**: Influence aggregations, thresholds, or baselines
 - **[ADE3-03 Timing and Scheduling](ade3-context-development.md#ade3-03-context-development---timing-and-scheduling)**: Space actions to avoid time-based constraints
 - **[ADE3-04 Event Fragmentation](ade3-context-development.md#ade3-04-context-development---event-fragmentation)**: Shell operators split commands across multiple events
+- **[ADE3-05 Lineage Spoofing](ade3-context-development.md#ade3-05-context-development---lineage-spoofing)**: Falsify the logged parent process that parent-child rules and exclusions trust
 
 ---
 
@@ -93,6 +96,7 @@ Attacker analyzes detection logic as Boolean conditions and manipulates inputs o
 - **[ADE4-01 Gate Inversion](ade4-logic-manipulation.md#ade4-01-logic-manipulation---gate-inversion)**: Exploit NOT clauses and De Morgan's Law violations
 - **[ADE4-02 Conjunction Inversion](ade4-logic-manipulation.md#ade4-02-logic-manipulation---conjunction-inversion)**: Flip AND conditions with poisoned data
 - **[ADE4-03 Incorrect Expression](ade4-logic-manipulation.md#ade4-03-logic-manipulation---incorrect-expression)**: Logic construction errors (AND vs OR)
+- **[ADE4-04 Field Mismapping & Semantics](ade4-logic-manipulation.md#ade4-04-logic-manipulation---field-mismapping--semantics)**: Wrong, unavailable, or misunderstood fields make conditions silently fail or invert
 
 ---
 
@@ -106,7 +110,9 @@ Attacker analyzes detection logic as Boolean conditions and manipulates inputs o
 - Threshold evasion → ADE3-02
 - Timing manipulation → ADE3-03
 - Piped commands → ADE3-04
+- Parent PID spoofing → ADE3-05
 - Logic flaws → ADE4
+- Field name/availability drift across sources or backends → ADE4-04
 
 **By Detection Pattern:**
 - `contains` on cmdline → ADE1-01, ADE3-04
@@ -118,3 +124,5 @@ Attacker analyzes detection logic as Boolean conditions and manipulates inputs o
 - Thresholds/counts → ADE3-02
 - Sequence rules → ADE3-03
 - Multiple `NOT` → ADE4-01
+- Parent process checks (`ParentImage`, `process.parent.*`) → ADE3-05
+- Sysmon-only fields (`OriginalFileName`), multi-backend Sigma, `not filter` on optional fields → ADE4-04

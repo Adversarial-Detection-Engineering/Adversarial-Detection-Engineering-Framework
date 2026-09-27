@@ -80,11 +80,12 @@ Both ask the same fundamental question from different perspectives.
 
 ### 2. Formal Taxonomy
 
-[Detection Logic Bug Taxonomy](../taxonomy/overview.md) classifies bugs into **4 major categories** and **12 subcategories**:
+[Detection Logic Bug Taxonomy](../taxonomy/overview.md) classifies bugs into **4 major categories** and **15 subcategories**:
 
 ```
 🌳 ADE1 – Reformatting in Actions
-    └─ ADE1-01 Substring Manipulation
+    ├─ ADE1-01 Substring Manipulation
+    └─ ADE1-02 Normalization Asymmetry
 
 🌳 ADE2 – Omit Alternatives
     ├─ ADE2-01 Method/Binary
@@ -96,12 +97,14 @@ Both ask the same fundamental question from different perspectives.
     ├─ ADE3-01 Process Cloning
     ├─ ADE3-02 Aggregation Hijacking
     ├─ ADE3-03 Timing and Scheduling
-    └─ ADE3-04 Event Fragmentation
+    ├─ ADE3-04 Event Fragmentation
+    └─ ADE3-05 Lineage Spoofing
 
 🌳 ADE4 – Logic Manipulation
     ├─ ADE4-01 Gate Inversion
     ├─ ADE4-02 Conjunction Inversion
-    └─ ADE4-03 Incorrect Expression
+    ├─ ADE4-03 Incorrect Expression
+    └─ ADE4-04 Field Mismapping & Semantics
 ```
 
 ### 3. Real-World Examples

@@ -72,6 +72,41 @@ condition: suspicious_activity AND not (field contains "safe_string")
 - Negating privileged accounts in non-privilege-escalation rules
 - Requiring mutually exclusive conditions
 
+---
+
+### ADE4-04: Logic Manipulation - Field Mismapping & Semantics
+
+**Definition:** Field Mismapping & Semantics occurs when detection logic references fields incorrectly — the wrong name, a field that is unavailable in the log source actually reaching the rule, or a field whose semantics the author misunderstood. The query does not error; it evaluates against a missing or wrong value and silently fails to match, or, inside a negated filter, inverts the rule outcome.
+
+**Why it happens:**
+- A single Sigma rule transpiles to many backends, each with its own field names, case handling, and null semantics
+- Rules are validated against one reference source (usually Sysmon) and deployed where fields differ
+- Field availability depends on the deployed telemetry and its configuration, not on the rule text
+
+**Result:** Like ADE4-03, often no attacker action is required — the rule is broken on arrival for part of the fleet. An attacker only needs to land where the depended-upon field is not collected.
+
+**Three failure modes:**
+
+1. **Field-Name Mismatch Across Backends** — right field, wrong spelling or case for the target backend
+   - `CommandLine` vs `commandline` / `command_line` / `process.command_line`
+   - `TargetFilename` (what Sysmon emits) vs `TargetFileName`
+   - Sysmon field names used against Security 4688, where the command line lives in `Process Command Line`
+   - Transpiles clean, matches nothing; zero hits look identical to "no attacks happened"
+
+2. **Unavailable Field — Silent Match Failure** — right name, but not populated in the source that reaches the rule
+   - `OriginalFileName` is present in Sysmon Event ID 1, absent from Security 4688 and many EDR tables
+   - `CommandLine` is absent from 4688 unless command-line process auditing is enabled
+   - `ParentImage` is not carried by PowerShell Script Block Logging (Event ID 4104)
+   - The deployed Sysmon configuration decides which event IDs and fields exist at all
+   - Truncated command lines move deep substrings out of view
+
+3. **Absent Field Inverts a Filter Clause** — a missing field inside `not filter` flips the outcome (the ADE4-04 ∩ ADE4-01 case)
+   - Authors reason in two-valued Boolean logic; backends may run three-valued logic where `NOT null` is `null`, not `true`
+   - Depending on backend null-handling, the exclusion either silently disables itself (**false positives**, the rule gets muted) or swallows every match (**false negatives**)
+   - The same Sigma source can fail in opposite directions on two SIEMs
+
+**Semantic confusion:** `SubjectUserName` (the actor) vs `TargetUserName` (the account acted upon) in Windows Security logs — matching the wrong one inverts who the rule is about.
+
 ## Examples
 
 ### Real-World Detection Logic Bugs
@@ -141,6 +176,39 @@ cmdline has "curl" or cmdline has "wget"
 **Excluding privileged accounts from non-privesc rules:**
 ```yaml
 suspicious_action and not (user in ("root", "SYSTEM", "Administrator"))
+```
+
+### ADE4-04 Patterns (Field Mismapping & Semantics)
+
+**Non-canonical field spelling:**
+```yaml
+Commandline|contains: '-enc'   # 'Commandline', not 'CommandLine'
+```
+
+**Source-specific field without a pinned log source:**
+```yaml
+logsource:
+    category: process_creation
+    product: windows            # not pinned to service: sysmon
+detection:
+    selection:
+        OriginalFileName: 'CertUtil.exe'   # null on 4688 and many EDR tables
+```
+
+**Negated filter on an optional field:**
+```yaml
+filter:
+    ParentImage|endswith: '\explorer.exe'   # may be absent
+condition: selection and not filter
+```
+
+**Hardened negation — only exclude when the field is present:**
+```yaml
+filter_benign_parent:
+    ParentImage|endswith: '\explorer.exe'
+filter_parent_present:
+    ParentImage|exists: true
+condition: selection and not (filter_benign_parent and filter_parent_present)
 ```
 
 ## 🚨 Risk of Negating Privileged Accounts
@@ -230,6 +298,12 @@ logic: user.previous != "root" and user.current == "root"
 - ✅ Are you using AND where OR is needed (or vice versa)?
 - ✅ Are you excluding privileged accounts in non-privesc rules?
 
+**For ADE4-04 (Field Mismapping & Semantics):**
+- ✅ Have you read the **transpiled** query (SPL/KQL/ES|QL/Lucene) and confirmed every field exists in that schema?
+- ✅ Does the rule depend on a field only some sources populate (e.g., `OriginalFileName`, `CommandLine` on 4688) without pinning `logsource.service`?
+- ✅ Does a `not filter` reference a field that can be absent on any target segment?
+- ✅ Has the rule fired on an atomic test on **each** backend it is deployed to?
+
 If you answered "yes" to any of these, your rule likely has an ADE4 vulnerability.
 
 ## Related Bug Categories
@@ -238,6 +312,8 @@ ADE4 often appears alongside:
 - **ADE1-01 (Substring Manipulation):** String manipulation used to flip negations
 - **ADE3-02 (Aggregation Hijacking):** Manipulated aggregations flip Boolean gates
 - **ADE2 (Omit Alternatives):** Logic errors compound with missing alternatives
+- **ADE3-05 (Lineage Spoofing):** Spoofed parent fields flip parent-based exclusions (ADE4-01 / ADE4-02)
+- **ADE2-02 (Versioning):** Product or log-source version changes can rename or remove fields a rule depends on (ADE4-04)
 
 ## Logic Testing Framework
 
@@ -248,3 +324,4 @@ ADE4 often appears alongside:
 3. **Test with real attack samples** (not just theoretical)
 4. **Apply De Morgan's Laws** to simplify negations
 5. **Validate privileged account assumptions** match rule scope
+6. **Add field presence** as an input to the truth table (`field present` / `field absent`) for every negated condition, per target backend
