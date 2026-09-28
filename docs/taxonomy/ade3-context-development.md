@@ -103,6 +103,31 @@ Rather than changing the primary malicious action, the attacker shapes the **sur
 
 **Relationship to ADE4:** Parent-based filter exclusions are directly exploitable through lineage spoofing. When the spoofed parent is the excluded value, this is ADE3-05 feeding [ADE4-01 Gate Inversion](ade4-logic-manipulation.md#ade4-01-logic-manipulation---gate-inversion) / [ADE4-02 Conjunction Inversion](ade4-logic-manipulation.md#ade4-02-logic-manipulation---conjunction-inversion).
 
+---
+
+### ADE3-06: Context Development - Limit Saturation
+
+**Definition:** Detection logic relies on a query operator that holds a **bounded working set** — a join or subsearch, a group table, a sort, or a per-key match count — while assuming the operator evaluates every record in scope. When the volume reaching that operator exceeds its limit, the engine truncates the set, and the in-scope record is discarded before the rule's conditions ever evaluate it, resulting in a False Negative.
+
+**Common Scenarios:**
+- Splunk `join`: the right-side subsearch is capped at 50,000 rows and 60 seconds by default, and `max=1` joins each main result to at most one subsearch row. Other subsearches are capped at 10,000 results / 60 seconds
+- CrowdStrike LogScale `join()`: the subquery is capped by `limit` (default 100,000, maximum 200,000), and `max=1` keeps one subquery row per join key
+- LogScale `groupBy()`: 20,000 groups by default (`limit=max` raises it to the `GroupMaxLimit`, 1,000,000 by default). When the limit is exceeded, it keeps the top-N groups by value
+- `sort` defaults: Splunk returns 10,000 results unless given `0`; LogScale `sort()` returns 200 unless given a `limit`
+
+**Why It Works:**
+- Truncation is not an error: the search completes, and at most a warning banner or job-log message records it — which nobody reads on a scheduled rule
+- The limit is spent on **everything** that reaches the operator, not on the records the rule cares about. A subsearch filtered only by event type spends its budget on noise
+- Volume grows on its own: a rule validated in a lab or a small tenant degrades silently as the estate grows. Like ADE3-04, this is **unintentional evasion**
+- Where the operator keeps the top-N by value (LogScale `groupBy()`), low-count groups are dropped first — exactly the rare groups a rarity or first-seen rule is looking for
+
+**Adversarial use — cap flooding:** An attacker who can generate records on the bounded side of the operator can push its volume past the limit on purpose. A burst of connections to many distinct destinations inflates a network-traffic subsearch; thousands of distinct low-count groups (randomized paths, names, or arguments) inflate a group table. The malicious action is unchanged — only the surrounding volume is shaped.
+
+**Distinguishing it from related bugs:**
+- **ADE3-02 Aggregation Hijacking** manipulates the *value* an aggregation computes (a count stays under a threshold). Limit Saturation decides whether the record is *in* the aggregation at all
+- **ADE1-02 Normalization Asymmetry** also produces an empty join, but because the keys differ. Under Limit Saturation the keys match and the row was never retained. To tell them apart, constrain the bounded side to a single host and re-run: if the match appears, the cause is truncation
+- **ADE4-04 Unavailable Field** covers telemetry ceilings (a command line truncated at collection). ADE3-06 is a query-engine ceiling on rows, groups, or keys
+
 ## Examples
 
 ### Real-World Detection Logic Bugs
@@ -148,6 +173,28 @@ Rather than changing the primary malicious action, the attacker shapes the **sur
    - Command: `tasklist | findstr lsass`
    - Fragmented across multiple process creation events
    - Platform: Windows Event ID 4688
+
+**ADE3-06 - Limit Saturation:**
+
+9. **[Rundll32 with No Command Line Arguments with Network - Limit Saturation](../../examples/ade3/limit-saturation-splunk-join.md)**
+   - `join` subsearch returns every network flow in the estate, grouped by 20 fields including `src_port` and `bytes`
+   - Platform: Splunk ESCU (production)
+
+10. **[Windows WinLogon with Public Network Connection](https://github.com/splunk/security_content/blob/develop/detections/endpoint/windows_winlogon_with_public_network_connection.yml)**
+    - `join` subsearch returns every public connection in the estate by `process_id`, `dest`, and `dest_port`, where the rule needs only winlogon's
+    - Platform: Splunk ESCU (production)
+
+11. **[Log4Shell JNDI Payload Injection with Outbound Connection](https://github.com/splunk/security_content/blob/develop/detections/web/log4shell_jndi_payload_injection_with_outbound_connection.yml)**
+    - `join` subsearch returns every destination in `Network_Traffic`; the rule needs only the hosts named in JNDI payloads
+    - Platform: Splunk ESCU (production)
+
+12. **[Hunt PDB File Paths in Reflective .NET Module Loads](https://github.com/CrowdStrike/logscale-community-content/blob/main/Queries-Only/Helpful-CQL-Queries/Hunt%20PBD%20File%20Paths%20in%20Reflective%20.net%20Module%20Loads.md)**
+    - `groupBy([FileName, FilePath])` with no `limit` (default 20,000, top-N by value retained), followed by a rarity filter `test(uniqueEndpoints<5)` — the rare groups are the first dropped
+    - Platform: CrowdStrike LogScale (community hunting query)
+
+13. **[Process Events - Identify Low Port Bindings](https://github.com/CrowdStrike/logscale-community-content/blob/main/Log-Sources/CrowdStrike/FLTR/crowdstrike-fltrcore/src/queries/ProcessEvents-IdentifyLowPortBindings.yaml)**
+    - `join()` subquery is every `NetworkListenIP4` with `LocalPort<1024` in the estate over 7 days; already set to `limit=200000`, the hard maximum, so it cannot be raised further
+    - Platform: CrowdStrike LogScale (FLTR package query)
 
 ## Detection Rule Patterns Vulnerable to ADE3
 
@@ -232,6 +279,31 @@ process.parent.name == "outlook.exe"
 ParentProcessId / ParentCommandLine used for alerting or suppression
 ```
 
+### ADE3-06 Patterns
+
+**Bounded subsearch/subquery on the high-volume side:**
+```spl
+| join process_id [
+    | tstats count FROM datamodel=Network_Traffic.All_Traffic
+      WHERE All_Traffic.dest_port != 0
+      BY All_Traffic.process_id All_Traffic.dest All_Traffic.dest_port ]
+```
+```
+| join({#event_simpleName=NetworkListenIP4 LocalPort<1024}, field=TargetProcessId, key=ContextProcessId, limit=200000)
+```
+
+**Group table with no explicit limit, followed by a rarity filter:**
+```
+| groupBy([FileName, FilePath], function=count(aid, distinct=true, as=uniqueEndpoints))
+| test(uniqueEndpoints<5)
+```
+
+**Sort without a count:**
+```
+| sort - count          (Splunk: 10,000 results)
+| sort(count)           (LogScale: 200 rows)
+```
+
 ## Why Context Development Is Powerful
 
 **Key Insight:** ADE3 bugs often don't require the attacker to know detection rules exist.
@@ -241,11 +313,13 @@ ParentProcessId / ParentCommandLine used for alerting or suppression
 **ADE3-03:** Operational security naturally involves timing spacing
 **ADE3-04:** Piped commands are **standard shell usage** - not intentional evasion
 **ADE3-05:** Parent PID spoofing is a **built-in feature of common C2 frameworks** - one flag, not a bespoke evasion
+**ADE3-06:** Data volume **grows on its own** - rules degrade as the estate grows, and noise speeds it up
 
 ## Related Bug Categories
 
 ADE3 often appears alongside:
 - **ADE1-01 (Substring Manipulation):** Context manipulation often involves string changes
+- **ADE1-02 (Normalization Asymmetry):** Both produce empty joins - ADE1-02 because the keys differ, ADE3-06 because the matching row was truncated
 - **ADE2-01 (Omit Alternatives - Method/Binary):** Cloned binaries are "alternative" execution methods
 - **ADE4-01 (Gate Inversion):** Timing/aggregation manipulation can flip Boolean gates
 - **ADE4-01 / ADE4-02 (Gate / Conjunction Inversion):** Lineage spoofing (ADE3-05) poisons parent fields used in exclusion filters
@@ -278,5 +352,11 @@ ADE3 often appears alongside:
 - ✅ Does your rule alert on, or exclude by, the parent process (`ParentImage`, `process.parent.*`)?
 - ✅ Can the attacker create processes with a chosen parent at the assumed privilege level?
 - ✅ Does your telemetry expose the real creator (ETW event header, EDR real-parent field), or only the reported parent?
+
+**For ADE3-06:**
+- ✅ Does your rule use a `join`, a subsearch, a group-by over high-cardinality keys, or a `sort`?
+- ✅ Is the bounded side filtered only by event type, rather than narrowed toward the records the rule needs?
+- ✅ Could the volume on that side exceed the engine's default limit in your largest environment and search window?
+- ✅ Does a rarity or threshold filter run *after* a group limit that keeps only the top-N?
 
 If you answered "yes" to any category's questions, your rule likely has an ADE3 vulnerability.

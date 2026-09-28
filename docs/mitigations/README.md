@@ -268,6 +268,17 @@ detection:
 3. **Keep a behavioral rule for the child**: detect what the child process does, so a spoofed parent removes context but not coverage.
 4. **Validate cross-source signals in a lab**: confirm what each source (Sysmon, Security 4688, ETW, EDR) records under spoofing before building a correlation on it.
 
+### Mitigation 4: Keep Bounded Operators on the Rare Side
+
+**Problem**: A join, subsearch, group table, or sort holds a bounded working set (ADE3-06). When volume exceeds the limit the set is truncated without an error, and the record the rule needed is dropped.
+
+**Best Practice**:
+1. **Put the rare set in the bounded operator**: the subsearch or subquery should return the few records the rule is about (e.g., the suspicious processes), and the high-volume source should be the streamed, unbounded side.
+2. **Prefer streaming correlation over `join`**: in Splunk, OR both sources into one search and correlate with `stats ... by <key>`; in LogScale, use `selfJoinFilter()` (it has no false negatives, but admits some false-positive keys, so gate the result on both sides being present). A `groupBy()` keyed per process is not an escape hatch — at estate scale it hits the group limit instead.
+3. **Raise limits explicitly where the engine allows it**: `limit=max` on LogScale `groupBy()`, `limit=` on LogScale `join()`, `sort 0` in Splunk. Where a hard maximum exists (LogScale `join()`: 200,000), reduce the input instead.
+4. **Never apply a rarity filter after a top-N limit**: a group table that keeps the highest-value groups drops the rare ones first.
+5. **Probe for truncation**: count the bounded side alone over the rule's window, and re-run the rule constrained to a single host. If a match appears only when constrained, the rule is truncating.
+
 ---
 
 ## Logic Manipulation
