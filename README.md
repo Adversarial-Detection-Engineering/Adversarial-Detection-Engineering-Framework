@@ -57,7 +57,7 @@ The purpose of ADE is not to force perfection in design, although that is an ide
 
 ## ADE Detection Logic Bug Taxonomy
 
-The framework identifies **4 major categories** and **15 subcategories** of detection logic bugs:
+The framework identifies **4 major categories** and **16 subcategories** of detection logic bugs:
 
 ```
 🌳 ADE1 – Reformatting in Actions
@@ -75,7 +75,8 @@ The framework identifies **4 major categories** and **15 subcategories** of dete
     ├─ ADE3-02 Aggregation Hijacking
     ├─ ADE3-03 Timing and Scheduling
     ├─ ADE3-04 Event Fragmentation
-    └─ ADE3-05 Lineage Spoofing
+    ├─ ADE3-05 Lineage Spoofing
+    └─ ADE3-06 Limit Saturation
 
 🌳 ADE4 – Logic Manipulation
     ├─ ADE4-01 Gate Inversion
@@ -100,7 +101,7 @@ The framework identifies **4 major categories** and **15 subcategories** of dete
 
 [Comprehensive classification](docs/taxonomy/overview.md) with clear terminology:
 - 4 major categories
-- 15 detailed subcategories
+- 16 detailed subcategories
 - Consistent labeling system (ADE1-01, ADE2-01, etc.)
 - Mapping to real-world detection rules
 

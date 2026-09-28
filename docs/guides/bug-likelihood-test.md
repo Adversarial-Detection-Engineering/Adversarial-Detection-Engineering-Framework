@@ -81,6 +81,12 @@ Then, continue on with the Bug Likelihoot Test.
       - The attacker can assign an arbitrary parent at process creation (Parent PID spoofing), so parent‑child conditions miss and parent‑based exclusions can be matched on purpose.
 
 
+- [ ] Does the rule use a `join`, subsearch, group‑by over high‑cardinality keys, or `sort`, whose bounded side is filtered only by event type?
+
+      - ADE3‑06 – Context Development (Limit Saturation)
+      - Past the engine's limit (Splunk `join` 50,000 rows; LogScale `groupBy()` 20,000 groups, `join()` 100,000 rows) the set is silently truncated, and the record the rule needed may not survive. Volume growth or attacker‑generated noise triggers it.
+
+
 - [ ] Does the rule reference a field that some target log sources or backends name differently, don’t populate, or that sits inside a `not` filter?
 
       - ADE4‑04 – Logic Manipulation (Field Mismapping & Semantics)

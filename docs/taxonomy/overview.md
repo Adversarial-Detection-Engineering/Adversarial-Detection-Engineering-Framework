@@ -24,7 +24,7 @@ Other solutions and their rulesets have not yet been reviewed as part of creatin
 
 ## ADE Detection Logic Bug Taxonomy
 
-The full taxonomy consists of 4 categories, and 15 sub-categories
+The full taxonomy consists of 4 categories, and 16 sub-categories
 - Each category is given a label, such as ADE1, ADE2, ...., ADE4.
 - Subcategories are labels with their subcategory number. E.g ADE1-02, ADE3-03 This is for mappings to rules.
 
@@ -42,7 +42,8 @@ The full taxonomy consists of 4 categories, and 15 sub-categories
     ├─ ADE3-02 Aggregation Hijacking
     ├─ ADE3-03 Timing and Scheduling
     ├─ ADE3-04 Event Fragmentation
-    └─ ADE3-05 Lineage Spoofing
+    ├─ ADE3-05 Lineage Spoofing
+    └─ ADE3-06 Limit Saturation
 🌳 ADE4 – Logic Manipulation
     ├─ ADE4-01 Gate Inversion
     ├─ ADE4-02 Conjunction Inversion
@@ -85,6 +86,7 @@ Attacker takes additional steps to **manipulate or poison contextual data** used
 - **[ADE3-03 Timing and Scheduling](ade3-context-development.md#ade3-03-context-development---timing-and-scheduling)**: Space actions to avoid time-based constraints
 - **[ADE3-04 Event Fragmentation](ade3-context-development.md#ade3-04-context-development---event-fragmentation)**: Shell operators split commands across multiple events
 - **[ADE3-05 Lineage Spoofing](ade3-context-development.md#ade3-05-context-development---lineage-spoofing)**: Falsify the logged parent process that parent-child rules and exclusions trust
+- **[ADE3-06 Limit Saturation](ade3-context-development.md#ade3-06-context-development---limit-saturation)**: Volume past a join, subsearch, group, or sort limit silently truncates the record the rule needed
 
 ---
 
@@ -111,12 +113,13 @@ Attacker analyzes detection logic as Boolean conditions and manipulates inputs o
 - Timing manipulation → ADE3-03
 - Piped commands → ADE3-04
 - Parent PID spoofing → ADE3-05
+- Volume or cardinality flooding → ADE3-06
 - Logic flaws → ADE4
 - Field name/availability drift across sources or backends → ADE4-04
 
 **By Detection Pattern:**
 - `contains` on cmdline → ADE1-01, ADE3-04
-- `join` on query logic → ADE1-02, ADE3-02
+- `join` on query logic → ADE1-02, ADE3-02, ADE3-06
 - Process name checks → ADE3-01
 - Method-specific queries → ADE2-01, ADE2-02
 - File paths → ADE2-03
@@ -125,4 +128,5 @@ Attacker analyzes detection logic as Boolean conditions and manipulates inputs o
 - Sequence rules → ADE3-03
 - Multiple `NOT` → ADE4-01
 - Parent process checks (`ParentImage`, `process.parent.*`) → ADE3-05
+- Subsearches, `groupBy`/`stats` over high-cardinality keys, `sort` without a count → ADE3-06
 - Sysmon-only fields (`OriginalFileName`), multi-backend Sigma, `not filter` on optional fields → ADE4-04
