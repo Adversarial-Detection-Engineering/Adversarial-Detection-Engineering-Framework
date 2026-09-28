@@ -66,15 +66,22 @@ Unlike ADE3-01/02/03/05, no preparatory step by the attacker is required for thi
 
 ## Fix
 
-Per [Mitigation 4](../../docs/mitigations/README.md#mitigation-4-keep-bounded-operators-on-the-rare-side): restructure as a `stats`-based correlation over an OR'd base search instead of `join`, so there is no subsearch and no row cap —
+Per [Mitigation 4](../../docs/mitigations/README.md#mitigation-4-keep-bounded-operators-on-the-rare-side): invert the correlation so the bounded operator holds the **rare** set. The subsearch returns only the rundll32-with-no-arguments processes, and the high-volume `Network_Traffic` data model is the streamed, unbounded side, filtered by the subsearch's output —
 
 ```spl
-(`process_rundll32` Processes.process IN ("*rundll32", "*rundll32.exe", "*rundll32.exe\"")) OR (All_Traffic.dest_port != 0)
-| stats values(Processes.*) as *, values(All_Traffic.*) as * by host, process_id
-| where isnotnull(process) AND isnotnull(dest_port)
+| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time) as lastTime
+  FROM datamodel=Network_Traffic.All_Traffic
+  WHERE All_Traffic.dest_port != 0
+    [ | tstats `security_content_summariesonly` count FROM datamodel=Endpoint.Processes
+        WHERE `process_rundll32` Processes.process IN ("*rundll32", "*rundll32.exe", "*rundll32.exe\"")
+        BY host Processes.process_id
+      | rename Processes.process_id AS All_Traffic.process_id
+      | fields host All_Traffic.process_id ]
+  BY host All_Traffic.process_id All_Traffic.dest All_Traffic.dest_port
+| `drop_dm_object_name(All_Traffic)`
 ```
 
-This keeps the rare, targeted side (rundll32 executions with no arguments) and the high-volume side (all network flows) in the same streamed pipeline, with no operator that silently drops rows once volume exceeds a fixed cap.
+The subsearch is still bounded (10,000 results by default), but it now holds the records the rule is about. If the estate has more than 10,000 rundll32-with-no-arguments processes in one window, the rule has a false-positive problem to solve first. The same subsearch-in-`WHERE` pattern is used by production ESCU detections such as *Attacker Tools On Endpoint* and *Prohibited Network Traffic Allowed*. The trade-off: the output carries network fields only, so pull process context (parent, user, path) from `Endpoint.Processes` during triage or in a follow-up enrichment step.
 
 ## Impact
 

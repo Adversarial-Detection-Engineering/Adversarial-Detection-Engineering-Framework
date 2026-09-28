@@ -274,7 +274,7 @@ detection:
 
 **Best Practice**:
 1. **Put the rare set in the bounded operator**: the subsearch or subquery should return the few records the rule is about (e.g., the suspicious processes), and the high-volume source should be the streamed, unbounded side.
-2. **Prefer streaming correlation over `join`**: in Splunk, OR both sources into one search and correlate with `stats ... by <key>`; in LogScale, use `selfJoinFilter()` (it has no false negatives, but admits some false-positive keys, so gate the result on both sides being present). A `groupBy()` keyed per process is not an escape hatch — at estate scale it hits the group limit instead.
+2. **Prefer streaming correlation over `join`**: in Splunk, for raw events, OR both sources into one search and correlate with `stats ... by <key>`; for data-model `tstats` rules, feed the rare set as a subsearch inside the high-volume `tstats` `WHERE` clause; in LogScale, use `selfJoinFilter()` (it has no false negatives, but admits some false-positive keys, so gate the result on both sides being present). A `groupBy()` keyed per process is not an escape hatch — at estate scale it hits the group limit instead.
 3. **Raise limits explicitly where the engine allows it**: `limit=max` on LogScale `groupBy()`, `limit=` on LogScale `join()`, `sort 0` in Splunk. Where a hard maximum exists (LogScale `join()`: 200,000), reduce the input instead.
 4. **Never apply a rarity filter after a top-N limit**: a group table that keeps the highest-value groups drops the rare ones first.
 5. **Probe for truncation**: count the bounded side alone over the rule's window, and re-run the rule constrained to a single host. If a match appears only when constrained, the rule is truncating.
