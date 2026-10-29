@@ -16,6 +16,13 @@ character_substitutions:
   - "a -> U+1D43 MODIFIER LETTER SMALL A (ᵃ)"
   - "c -> U+1D9C MODIFIER LETTER SMALL C (ᶜ)"
   - "g -> U+1D4D MODIFIER LETTER SMALL G (ᵍ)"
+unicode_blocks:  # all three are general category Lm (Modifier Letter)
+  - name: Phonetic Extensions
+    range: U+1D00-U+1D7F
+    characters: [U+1D43, U+1D4D]
+  - name: Phonetic Extensions Supplement
+    range: U+1D80-U+1DBF
+    characters: [U+1D9C]
 assumption_violated: >
   The detection assumes the msiexec install switch reaches the command line in
   one of its documented ASCII spellings, and that msiexec rejects every other
@@ -75,3 +82,9 @@ notes: >
   with NFKC and matching case-insensitively closes this variant. Detections
   anchored on what the attacker cannot change, such as msiexec fetching a
   package over HTTP(S), are not affected by how the switch is spelled.
+
+  Detect on the block, not the characters. A rule listing ᵃ, ᶜ and ᵍ misses
+  the other modifier letters in the same blocks, which msiexec also accepts
+  (see the all-modifier result above). Flagging an msiexec.exe command line
+  that contains any character in U+1D00-U+1DBF covers every variant, and
+  legitimate command lines essentially never contain phonetic characters.

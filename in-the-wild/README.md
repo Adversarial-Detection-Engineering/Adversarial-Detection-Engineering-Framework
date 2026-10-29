@@ -38,6 +38,7 @@ Each entry is a YAML file named by its ID and contains:
 - **related_ade** (e.g. ADE1-01 – Substring Manipulation)
 - **technique_description** (what the attacker did and why detections miss it)
 - **observed_command** (quoted from the source, defanged) — or **observed_artifact** when the technique has no distinguishing command line (a spoofed parent, a direct API/COM call)
+- **unicode_blocks** (optional, for character-substitution techniques: the Unicode blocks the substituted characters come from, so detections can target the range)
 - **assumption_violated** (the detection assumption the technique breaks)
 - **observed** (malware family, actor or `unattributed`, delivery, first report date, sources)
 - **reproduction** (whether the bypass was reproduced, how, and when: `confirmed`, `not_reproduced`, or `untested`)
