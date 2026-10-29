@@ -1,0 +1,51 @@
+id: ITW-2026-00004
+title: FIN7 cmd.exe character-replacement and string concatenation in a LNK payload
+related_ade:
+  - ADE1-01  # Reformatting in Actions – Substring Manipulation
+schema_version: 1.0
+technique_description: >
+  A FIN7 phishing LNK set the wscript.exe command in a process-level
+  environment variable "x" with "@" characters inserted, then echoed it back
+  with cmd.exe's character-replacement syntax %x:@=% to strip the "@" at run
+  time. The macro also broke identifying strings with concatenation
+  ("Wor"+"d.Application") and rebuilt "eval" as
+  this[String.fromCharCode(101)+'va'+'l']. Each transformation defeats a rule
+  matching the clean substring.
+observed_command: |
+  # env var x = obfuscated wscript command containing "@" padding
+  # de-obfuscated at runtime by:  %x:@=%
+  # related string tricks:  "Wor"+"d.Application"
+  #                         this[String.fromCharCode(101)+'va'+'l']   # -> eval
+assumption_violated: >
+  The detection assumes identifying tokens (the interpreter name, "Word.Application",
+  "eval") appear as literal contiguous substrings. cmd.exe variable
+  substitution with character removal and JavaScript concatenation rebuild the
+  same tokens at run time from pieces that never match the rule.
+observed:
+  malware_family: null
+  actor: FIN7
+  delivery: phishing document with embedded LNK
+  observed_date: 2017-04
+  first_reported: 2017-06-30
+  sources:
+    - title: "Obfuscation in the Wild: Targeted Attackers Lead the Way in Evasion Techniques"
+      publisher: Mandiant (FireEye)
+      authors: Daniel Bohannon, Nick Carr
+      url: https://cloud.google.com/blog/topics/threat-intelligence/obfuscation-wild-targeted-attackers-lead-way-evasion-techniques
+reproduction:
+  status: not_reproduced
+  note: Historical campaign documented from the vendor report, not re-run in a lab.
+related_dle: []
+logsource:
+  product: windows
+  category: process_creation
+mitre_attack:
+  - T1059.005  # Command and Scripting Interpreter: Visual Basic / wscript
+  - T1027.010  # Obfuscated Files or Information: Command Obfuscation
+credit: ADE Maintainers
+notes: >
+  Report describes FIN7's use of a "little-known character replacement
+  functionality supported by cmd.exe" to strip the "@" character via "%x:@=%".
+  This research is the in-the-wild basis for the later Invoke-DOSfuscation work.
+  Token-level parsing and runtime (script-block / AMSI) visibility defeat the
+  reassembly that static substring matching misses.

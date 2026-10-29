@@ -40,6 +40,11 @@ The purpose of ADE is not to force perfection in design, although that is an ide
 - ADE supplies a canonical taxonomy and bug classes for detection logic bugs.
 - [DLE](https://github.com/NikolasBielski/Adversarial-Detection-Engineering-Framework/tree/main/dle) provides a recognized list of publically disclosed bypasses with ADE mappings. 
 
+## In-the-Wild Bypasses
+
+- [In-the-Wild](in-the-wild/README.md) documents threat actors observed using detection bypass techniques in real intrusions, mapped to ADE bug classes.
+- These cases are rare. Each one is evidence that an ADE bug class is exploited in practice, not only in theory.
+
 ## Quick Start
 
 **New to ADE?** Start here:
@@ -54,6 +59,7 @@ The purpose of ADE is not to force perfection in design, although that is an ide
 - [Detection Logic Bug Theory](docs/theory/detection-logic-bugs.md) - Formal foundations
 - [Taxonomy Overview](docs/taxonomy/overview.md) - All bug categories
 - [Examples](examples/) - Real-world examples
+- [In-the-Wild Bypasses](in-the-wild/README.md) - Threat actors observed using bypass techniques
 
 ## ADE Detection Logic Bug Taxonomy
 

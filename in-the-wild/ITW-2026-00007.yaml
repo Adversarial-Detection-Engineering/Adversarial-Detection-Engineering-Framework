@@ -1,0 +1,49 @@
+id: ITW-2026-00007
+title: Hello ransomware deletes shadow copies through a COM interface instead of vssadmin
+related_ade:
+  - ADE2-01  # Omit Alternatives – Method/Binary
+schema_version: 1.0
+technique_description: >
+  A sample of Hello (WickrMe) ransomware deleted Volume Shadow Copies by
+  instantiating the COM Volume Shadow Copy Coordinator (VssCoordinator) through
+  its CLSID and calling the deletion interface directly, rather than running
+  vssadmin.exe, wmic.exe or PowerShell. Detections built around the usual
+  shadow-copy-deletion binaries and their command lines never see a matching
+  process.
+observed_artifact: >
+  In-process COM calls to the Volume Shadow Copy Coordinator (CoCreateInstance
+  on the VssCoordinator CLSID, then delete all shadow copies). No vssadmin.exe,
+  wmic.exe or powershell.exe process and no shadow-copy command line is created.
+  Observed in Hello ransomware sample xd.exe
+  (ffebda7512c78ba73ffa40dd02b59fd22cfa8e1bf48cd86e7b2d54e19c061134).
+assumption_violated: >
+  The detection assumes shadow-copy deletion happens through a known binary and
+  command line, such as "vssadmin delete shadows" or "wmic shadowcopy delete".
+  The same outcome is reachable through direct COM calls, which produce none of
+  those process or command-line artifacts.
+observed:
+  malware_family: Hello (WickrMe) ransomware
+  actor: unattributed
+  delivery: ransomware payload (xd.exe drops di.dll, which drops vs.exe)
+  first_reported: 2022-09-20
+  sources:
+    - title: "Threat Report: Illuminating Volume Shadow Deletion"
+      publisher: VMware Carbon Black (Threat Analysis Unit)
+      authors: Dana Behling
+      url: https://blogs.vmware.com/security/2022/09/threat-report-illuminating-volume-shadow-deletion.html
+reproduction:
+  status: not_reproduced
+  note: Documented from the vendor report, not re-run in a lab.
+related_dle: []
+logsource:
+  product: windows
+  category: process_creation
+mitre_attack:
+  - T1490  # Inhibit System Recovery
+credit: ADE Maintainers
+notes: >
+  Report describes "a new method discovered in the wild that can bypass many
+  forms of detection and prevention" and states the COM technique "has no
+  detections by security vendors" at the time of writing. Detections anchored on
+  the shadow-copy service state or the VSS API surface, rather than on the
+  vssadmin / wmic command line, are not bypassed by the method switch.

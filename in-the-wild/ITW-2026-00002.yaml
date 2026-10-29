@@ -1,0 +1,51 @@
+id: ITW-2026-00002
+title: APT32 regsvr32 /i argument obfuscated with carets and quotes
+related_ade:
+  - ADE1-01  # Reformatting in Actions – Substring Manipulation
+schema_version: 1.0
+technique_description: >
+  APT32 used the regsvr32.exe application-allowlisting bypass, which passes a
+  remote scriptlet URL through the /i: argument. Instead of the literal
+  /i:http, the group inserted cmd.exe escape characters into the argument so
+  that a rule matching the substring "/i:http" would not fire, while cmd.exe
+  stripped the escapes and the argument still resolved to the same URL.
+observed_command: |
+  regsvr32 ... /i:^h^t^t^p ...
+  regsvr32 ... /i:h"t"t"p ...
+assumption_violated: >
+  The detection assumes the scriptlet URL reaches the command line as the
+  contiguous substring "/i:http". cmd.exe treats the caret (^) and paired
+  quotes as escape syntax that is removed before the argument is used, so the
+  set of command lines that resolve to the same URL is larger than the single
+  substring the rule matches.
+observed:
+  malware_family: null
+  actor: APT32
+  delivery: phishing lures (regsvr32 scriptlet bypass)
+  observed_date: 2017-04
+  first_reported: 2017-06-30
+  sources:
+    - title: "Obfuscation in the Wild: Targeted Attackers Lead the Way in Evasion Techniques"
+      publisher: Mandiant (FireEye)
+      authors: Daniel Bohannon, Nick Carr
+      url: https://cloud.google.com/blog/topics/threat-intelligence/obfuscation-wild-targeted-attackers-lead-way-evasion-techniques
+reproduction:
+  status: not_reproduced
+  note: >
+    Historical campaign documented from the vendor report, not re-run in a lab.
+    cmd.exe caret and quote escaping is well documented.
+related_dle: []
+logsource:
+  product: windows
+  category: process_creation
+mitre_attack:
+  - T1218.010  # System Binary Proxy Execution: Regsvr32
+  - T1027.010  # Obfuscated Files or Information: Command Obfuscation
+credit: ADE Maintainers
+notes: >
+  Report quote: APT32 "used cmd.exe obfuscation techniques to attempt to break
+  signature-based detection of this argument." The report quotes the obfuscated
+  arguments rather than the full command line. A detection anchored on
+  regsvr32.exe loading a remote scriptlet (network egress plus /i: with a URL),
+  rather than on the literal "/i:http" substring, is not affected by the escape
+  characters.

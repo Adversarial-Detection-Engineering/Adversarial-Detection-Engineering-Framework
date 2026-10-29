@@ -1,0 +1,52 @@
+id: ITW-2026-00003
+title: FIN8 keeps the PowerShell command off the command line via env var and StdIn
+related_ade:
+  - ADE1-01  # Reformatting in Actions – Substring Manipulation
+schema_version: 1.0
+technique_description: >
+  A FIN8 phishing macro stored the real PowerShell command in one environment
+  variable and the string "powershell -" in another, then launched PowerShell.
+  Because a PowerShell command ending in a dash reads its command from StdIn,
+  only the dash appears in powershell.exe's command-line arguments. A rule
+  looking for suspicious PowerShell content in the command line sees nothing to
+  match.
+observed_command: |
+  # env var _MICROSOFT_UPDATE_CATALOG = <the PowerShell command>
+  # env var MICROSOFT_UPDATE_SERVICE = "powershell -"
+  # launched command line shows only: powershell -
+assumption_violated: >
+  The detection assumes a PowerShell payload is present as readable substrings
+  in powershell.exe's command line. When the command is delivered through StdIn,
+  the command line carries only a trailing dash and the payload never appears in
+  the field the rule inspects.
+observed:
+  malware_family: null
+  actor: FIN8
+  delivery: phishing document macro (COMPLAINT Homer Glynn.doc, MD5 cc89ddac1afe69069eb18bac58c6a9e4)
+  observed_date: 2017-02
+  first_reported: 2017-06-30
+  sources:
+    - title: "Obfuscation in the Wild: Targeted Attackers Lead the Way in Evasion Techniques"
+      publisher: Mandiant (FireEye)
+      authors: Daniel Bohannon, Nick Carr
+      url: https://cloud.google.com/blog/topics/threat-intelligence/obfuscation-wild-targeted-attackers-lead-way-evasion-techniques
+reproduction:
+  status: not_reproduced
+  note: Historical campaign documented from the vendor report, not re-run in a lab.
+related_dle: []
+logsource:
+  product: windows
+  category: process_creation
+mitre_attack:
+  - T1059.001  # Command and Scripting Interpreter: PowerShell
+  - T1027.010  # Obfuscated Files or Information: Command Obfuscation
+  - T1564.003  # Hide Artifacts: Hidden Window / StdIn delivery
+credit: ADE Maintainers
+notes: >
+  Report quote: FIN8 "began using environment variables paired with
+  PowerShell's ability to receive commands via StdIn (standard input) to evade
+  detection based on process command line arguments." The same macro also used
+  WMI to spawn cmd.exe so WinWord.exe never creates a child process (tree:
+  wmiprvse.exe > cmd.exe > powershell.exe), which is a parent-child break
+  related to ADE3-05 Lineage Spoofing. Script-block logging and StdIn capture
+  see the payload the command line hides.

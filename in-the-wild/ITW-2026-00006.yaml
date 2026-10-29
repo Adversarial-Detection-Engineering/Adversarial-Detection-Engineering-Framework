@@ -1,0 +1,49 @@
+id: ITW-2026-00006
+title: Ursnif loader spoofs its parent process to explorer.exe
+related_ade:
+  - ADE3-05  # Context Development – Lineage Spoofing
+schema_version: 1.0
+technique_description: >
+  An Ursnif infection chain dropped an executable (1440.exe) whose parent
+  process was set to explorer.exe. The dropper obtained a handle to explorer.exe
+  and called UpdateProcThreadAttribute (PROC_THREAD_ATTRIBUTE_PARENT_PROCESS) so
+  the process-creation event records explorer.exe as the parent instead of the
+  real creator. A parent-child rule that treats the logged parent as truthful
+  does not fire.
+observed_artifact: >
+  Dropped executable 1440.exe created with a spoofed parent of explorer.exe via
+  UpdateProcThreadAttribute; there is no distinguishing command line, the
+  falsified field is the parent.
+assumption_violated: >
+  The detection assumes the logged parent process (ParentImage /
+  ParentProcessId) is the real creator. UpdateProcThreadAttribute lets a process
+  assign an arbitrary existing process as the recorded parent, so the parent
+  fields the rule trusts are attacker-controlled.
+observed:
+  malware_family: Ursnif (banking trojan)
+  actor: unattributed
+  delivery: phishing (malicious XLS and HTA documents)
+  first_reported: 2022-12-22
+  sources:
+    - title: "Ursnif Malware Banks on News Events for Phishing Attacks"
+      publisher: Qualys
+      authors: Amit Gadhave
+      url: https://blog.qualys.com/vulnerabilities-threat-research/2022/05/08/ursnif-malware-banks-on-news-events-for-phishing-attacks
+reproduction:
+  status: not_reproduced
+  note: >
+    Documented from the vendor report. PPID spoofing via
+    PROC_THREAD_ATTRIBUTE_PARENT_PROCESS is a documented Windows capability.
+related_dle: []
+logsource:
+  product: windows
+  category: process_creation
+mitre_attack:
+  - T1134.004  # Access Token Manipulation: Parent PID Spoofing
+credit: ADE Maintainers
+notes: >
+  Report quote: the dropper "calls UpdateProcThreadAttribute to perform parent
+  PID spoofing ... (1440.exe) is spoofed to explorer.exe to evade detection."
+  The real creator still lives in ETW Microsoft-Windows-Kernel-Process start
+  events and in EDR telemetry that exposes the true parent PID; cross-check
+  there rather than trusting ParentProcessId from Sysmon Event ID 1 alone.

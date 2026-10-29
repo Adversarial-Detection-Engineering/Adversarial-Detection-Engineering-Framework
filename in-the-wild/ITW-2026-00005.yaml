@@ -1,0 +1,51 @@
+id: ITW-2026-00005
+title: Raspberry Robin mixed-case msiexec and command obfuscation
+related_ade:
+  - ADE1-01  # Reformatting in Actions – Substring Manipulation
+schema_version: 1.0
+technique_description: >
+  Raspberry Robin writes its commands with mixed-case letters, for example
+  mSIeXEc, ExpLoRER and HTtp. cmd.exe and the Windows binaries are
+  case-insensitive, so the commands run normally, while a case-sensitive
+  string match for the lowercase form does not fire.
+observed_command: |
+  # mixed-case forms observed in the command line:
+  #   mSIeXEc   ExpLoRER   HTtp
+  # e.g. cmd /R < over a random-named file, then msiexec to a remote host
+assumption_violated: >
+  The detection assumes the process name or argument appears in a known case
+  (usually lowercase). Windows command processing is case-insensitive, so the
+  same command has many case spellings and a case-sensitive substring rule
+  matches only one of them.
+observed:
+  malware_family: Raspberry Robin (USB worm, msiexec C2)
+  actor: unattributed
+  delivery: USB drive with LNK, cmd.exe launching msiexec.exe
+  observed_date: 2022-05
+  first_reported: 2022-05-05
+  sources:
+    - title: "Raspberry Robin gets the worm early"
+      publisher: Red Canary (article now hosted by Zscaler)
+      authors: Lauren Podber, Stef Rand
+      url: https://www.zscaler.com/blogs/cybersecurity-best-practices/raspberry-robin
+    - title: "Raspberry Robin worm part of larger malware operation facilitating pre-ransomware activity"
+      publisher: Microsoft
+      url: https://www.microsoft.com/en-us/security/blog/2022/10/27/raspberry-robin-worm-part-of-larger-ecosystem-facilitating-pre-ransomware-activity/
+reproduction:
+  status: not_reproduced
+  note: >
+    cmd.exe and Windows image-name matching are case-insensitive by design;
+    not re-run in a lab.
+related_dle: []
+logsource:
+  product: windows
+  category: process_creation
+mitre_attack:
+  - T1218.007  # System Binary Proxy Execution: Msiexec
+  - T1027.010  # Obfuscated Files or Information: Command Obfuscation
+credit: ADE Maintainers
+notes: >
+  Report quote: "Adversaries sometimes use mixed-case syntax in an attempt to
+  evade detection. Case-sensitive, string-based detections written to detect
+  evil may not fire on eViL, but cmd.exe is case-insensitive." Normalize the
+  command line to a single case before matching, or match case-insensitively.
