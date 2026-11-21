@@ -151,7 +151,7 @@ These aren't just suggestions - they're your roadmap to durable detection.
 
 ### DO:
 ✅ Use tools like Procmon to trace actual system changes  
-✅ Account for *all* parameter variations (PowerShell's `-EncodedCommand` has at least 24 valid abbreviations!)  
+✅ Account for *all* parameter variations (PowerShell's `-EncodedCommand` has at least 75 valid abbreviations!)  
 ✅ Test detections with adversary emulation frameworks (Atomic Red Team, Caldera)  
 ✅ Reference methodologies like MITRE's "Summiting the Pyramid"  
 ✅ Continuously validate assumptions with real telemetry  
