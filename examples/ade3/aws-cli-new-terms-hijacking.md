@@ -115,7 +115,7 @@ If the host doesn't have AWS CLI pre-installed:
 
 **This is "Behavioral Steering":**
 - Attacker stacks multiple detection rule bugs during kill chain
-- Mentioned in [Detection Logic Bug Theory](https://github.com/NikolasBielski/Adversarial-Detection-Engineering-Framework/blob/main/Detection_Logic_Bug_Theory.md)
+- Mentioned in [Detection Logic Bug Theory](https://github.com/Adversarial-Detection-Engineering/Adversarial-Detection-Engineering-Framework/blob/main/docs/theory/detection-logic-bugs.md)
 
 ## Important Caveats
 

@@ -168,4 +168,4 @@ This excludes privileged accounts, missing RCE exploits that grant root/SYSTEM a
 
 **Related Topics:**
 - [ADE4-01 Gate Inversion](bits-gate-inversion.md)
-- [Risks of Negating Privileged Accounts](../../docs/taxonomy/ade4-logic-manipulation.md#risks-of-negating-privileged-accounts)
+- [Risk of Negating Privileged Accounts](../../docs/taxonomy/ade4-logic-manipulation.md#risk-of-negating-privileged-accounts)

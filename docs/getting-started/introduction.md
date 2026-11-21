@@ -214,5 +214,5 @@ Result: Deployed hardened rule → No known bypasses
 ---
 
 **Questions? Feedback?**
-- Report issues: [GitHub Issues](https://github.com/NikolasBielski/Adversarial-Detection-Engineering-Framework/issues)
+- Report issues: [GitHub Issues](https://github.com/Adversarial-Detection-Engineering/Adversarial-Detection-Engineering-Framework/issues)
 - Contribute: See [CONTRIBUTING.md](../../CONTRIBUTING.md)

@@ -211,7 +211,7 @@ filter_parent_present:
 condition: selection and not (filter_benign_parent and filter_parent_present)
 ```
 
-## 🚨 Risk of Negating Privileged Accounts
+## Risk of Negating Privileged Accounts
 
 **Critical Issue:** Many detection rules negate privileged accounts (root, SYSTEM, Administrator) to reduce noise from standard administrative activity.
 

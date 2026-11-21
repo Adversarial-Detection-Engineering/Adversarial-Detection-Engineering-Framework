@@ -72,7 +72,7 @@ An alternative method/binary, version, location, or file type is available withi
 - **[ADE2-01 Method/Binary](ade2-omit-alternatives.md#ade2-01-omit-alternatives---methodbinary)**: Alternative methods/binaries achieving same effect are omitted
 - **[ADE2-02 Versioning](ade2-omit-alternatives.md#ade2-02-omit-alternatives---versioning)**: Software/OS version differences not accounted for
 - **[ADE2-03 Locations](ade2-omit-alternatives.md#ade2-03-omit-alternatives---locations)**: Alternative file paths or locations ignored
-- **[ADE2-04 File Types](ade2-omit-alternatives.md#ade2-04-omit-alternatives---file-type)**: Alternative file extensions/formats omitted
+- **[ADE2-04 File Types](ade2-omit-alternatives.md#ade2-04-omit-alternatives---file-types)**: Alternative file extensions/formats omitted
 
 ---
 

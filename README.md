@@ -1,8 +1,8 @@
 # Adversarial Detection Engineering (ADE) Framework
 
 [![Author](https://img.shields.io/badge/Author-Nikolas_Bielski-blue)](https://github.com/NikolasBielski)
-[![GitHub Last Commit](https://img.shields.io/github/last-commit/NikolasBielski/Adversarial-Detection-Engineering-Framework)](https://github.com/NikolasBielski/Adversarial-Detection-Engineering-Framework/commits/main)
-[![GitHub License](https://img.shields.io/github/license/NikolasBielski/Adversarial-Detection-Engineering-Framework)](https://github.com/NikolasBielski/Adversarial-Detection-Engineering-Framework/blob/main/LICENSE)
+[![GitHub Last Commit](https://img.shields.io/github/last-commit/Adversarial-Detection-Engineering/Adversarial-Detection-Engineering-Framework)](https://github.com/Adversarial-Detection-Engineering/Adversarial-Detection-Engineering-Framework/commits/main)
+[![GitHub License](https://img.shields.io/github/license/Adversarial-Detection-Engineering/Adversarial-Detection-Engineering-Framework)](https://github.com/Adversarial-Detection-Engineering/Adversarial-Detection-Engineering-Framework/blob/main/LICENSE)
 
 **Get ahead of False Negatives** by understanding how detection logic fails before threat actors abuse it.
 
@@ -38,7 +38,7 @@ The purpose of ADE is not to force perfection in design, although that is an ide
 ## ADE link to Detection Logic Exposures (DLE)
 
 - ADE supplies a canonical taxonomy and bug classes for detection logic bugs.
-- [DLE](https://github.com/NikolasBielski/Adversarial-Detection-Engineering-Framework/tree/main/dle) provides a recognized list of publically disclosed bypasses with ADE mappings. 
+- [DLE](https://github.com/Adversarial-Detection-Engineering/Adversarial-Detection-Engineering-Framework/tree/main/dle) provides a recognized list of publically disclosed bypasses with ADE mappings. 
 
 ## In-the-Wild Bypasses
 
@@ -233,6 +233,6 @@ Users are solely responsible for ensuring that their use complies with all appli
 
 ## Contact
 
-- GitHub Issues: [Report bugs or request features](https://github.com/NikolasBielski/Adversarial-Detection-Engineering-Framework/issues)
+- GitHub Issues: [Report bugs or request features](https://github.com/Adversarial-Detection-Engineering/Adversarial-Detection-Engineering-Framework/issues)
 - LinkedIn: [Nikolas Bielski](https://www.linkedin.com/in/nikbielski/) | [Daniel Koifman](https://www.linkedin.com/in/koifman-daniel/)
 

@@ -111,7 +111,7 @@ Alert if:
 
 Immediate issues:
 - `pwsh.exe` (PowerShell Core) is missing
-- `encodedcommand` can be changed to [24 different variations using substring modification](https://detect.fyi/detection-pitfalls-you-might-be-sleeping-on-52b5a3d9a0c8)
+- `encodedcommand` can be changed to [at least 75 distinct spellings (prefix abbreviations, `-`/`/`, three Unicode dash prefixes, and the `-ec` alias)](https://detect.fyi/detection-pitfalls-you-might-be-sleeping-on-52b5a3d9a0c8)
 
 
 ## How to Find Immutable Artifacts

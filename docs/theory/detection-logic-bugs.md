@@ -11,7 +11,7 @@ ADE defines a **detection rule** as a repeatedly running hypothesis test, where 
 
 ### Detection rule scope and components
 
-The detection rule contains a human interpretable reason for it's use (such as 'detect when powershell script downloads a file'). In ADE this purpose is called the rule's **scope**. The detection rule is required to contain a step-by-step process that's interpreted by a machine (so data can be searched). That step-by-step process is the **detection logic** (delivered via query), and in it contains the conditions of the hypothesis test.
+The detection rule contains a human interpretable reason for its use (such as 'detect when powershell script downloads a file'). In ADE this purpose is called the rule's **scope**. The detection rule is required to contain a step-by-step process that's interpreted by a machine (so data can be searched). That step-by-step process is the **detection logic** (delivered via query), and in it contains the conditions of the hypothesis test.
 
 
 Almost every detection rule intentionally outputs a boolean outcome, hit or no hit. Due to this detection rules and hunting rules are considered to hold a hypothesis.
@@ -166,7 +166,7 @@ $file = $wc.GetType().InvokeMember("DownloadString","InvokeMethod,Public,Instanc
 Set-Content -Path "DIRECTORY_TO_WRITE_TO\evil.txt" -Value $file
 ```
 
-Look *carefully* at the Sigma rule and the hypothesis test notes above. *Condition B* is an exact match to `.DownloadString(` and not `DownloadString`, due to the inclusion of the `.` and `(` characters in the query, it opens the **detection rule** up to missing an attacker relfecting `DownloadString` via `InvokeMethod`. Simple but real bug in a SIEM rule used in vendor tooling *today*.
+Look *carefully* at the Sigma rule and the hypothesis test notes above. *Condition B* is an exact match to `.DownloadString(` and not `DownloadString`, due to the inclusion of the `.` and `(` characters in the query, it opens the **detection rule** up to missing an attacker reflecting `DownloadString` via `InvokeMethod`. Simple but real bug in a SIEM rule used in vendor tooling *today*.
 
 
 ##### Bypass 2: Taking advantage of string match reliance, and utilizing GetMethods
@@ -208,9 +208,9 @@ or
 ```yaml
 condition: selection_webclient or selection_download
 ```
-However, the may be some cases where `Web.Client` can be reformatted or alternative API/Methods be used. See "Fixing the bug" above for a detailed outline on how the Sigma rule [Potential AMSI Bypass Script Using NULL Bits](https://github.com/SigmaHQ/sigma/blob/master/rules/windows/powershell/powershell_script/posh_ps_amsi_null_bits_bypass.yml) picks up these actions, but also has it's own bugs! 
+However, there may be some cases where `Web.Client` can be reformatted or alternative API/Methods be used. See "Fixing the bug" above for a detailed outline on how the Sigma rule [Potential AMSI Bypass Script Using NULL Bits](https://github.com/SigmaHQ/sigma/blob/master/rules/windows/powershell/powershell_script/posh_ps_amsi_null_bits_bypass.yml) picks up these actions, but also has it's own bugs! 
 
 
 ### Continue to [Detection Logic Bug Taxonomy](../taxonomy/overview.md)
 
-There are multiple types of detection logic** bugs, each with their own examples and bypasses. View the Detection Logic Bug Taxonomy for definitions and examples of each.
+There are multiple types of detection logic bugs, each with their own examples and bypasses. View the Detection Logic Bug Taxonomy for definitions and examples of each.

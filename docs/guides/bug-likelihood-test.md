@@ -18,7 +18,7 @@ Before applying the ADE process, capture the key parameters of the detection rul
    - Null and Alternative hypotheses
    - Query frequency, bucket time range
 
-Then, continue on with the Bug Likelihoot Test.
+Then, continue on with the Bug Likelihood Test.
 
 ## Bug Likelihood Test
 

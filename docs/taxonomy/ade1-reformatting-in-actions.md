@@ -138,4 +138,4 @@ ADE1-02 often appears alongside:
 - Are guest / external / legacy account formats handled consistently?
 - Are you parsing JSON in one pipeline but using raw strings in another?
 
-If you answered "yes" to any of these, your rule likely has an ADE1-01 vulnerability.
+If you answered "yes" to any of these, your rule likely has an ADE1 vulnerability.

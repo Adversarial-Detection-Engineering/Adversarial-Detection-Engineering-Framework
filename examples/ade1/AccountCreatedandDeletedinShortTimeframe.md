@@ -1,4 +1,4 @@
-# ADE1-01 Example: PowerShell Get-NetTCPConnection Obfuscation
+# ADE1-02 Example: Account Created and Deleted in Short Timeframe (Normalization Asymmetry)
 
 **Bug Category:** ADE1-02 Reformatting in Actions - Normalization Asymmetry
 
@@ -86,13 +86,13 @@ There is an inconsistency in how User Principal Names (UPNs) are extracted for '
 
 ## Bypass
 
-### Method Name Obfuscation via PowerShell String Concatenation
+### UPN Normalization Asymmetry Breaks the Inner Join
 
 The detection logic uses different methods to extract the TargetUserPrincipalName for 'Add user' and 'Delete user' operations, leading to potential mismatches that prevent the inner join from correlating events. Specifically, for 'Add user', it uses trim(@'\"', tostring(TargetResource.userPrincipalName)), which retains the full UPN string. For 'Delete user', it uses extract(@'([a-f0-9]{32})?(.*)', 2, tostring(TargetResource.userPrincipalName)), which is designed to strip an optional GUID prefix (common in guest account UPNs) and capture the remainder. If a guest account is created with a UPN like GUID#EXT#user@domain.com, the 'Add user' extraction will yield the full string including the GUID, while the 'Delete user' extraction will yield only #EXT#user@domain.com. This inconsistency causes the TargetUserPrincipalName values to differ, breaking the inner join and allowing the activity to go undetected.
 
 ## Impact
 
-False Negative: Account Created and Deleted in Short Timeframe suceeds without detection as inner join fails.
+False Negative: Account Created and Deleted in Short Timeframe succeeds without detection as inner join fails.
 
 ---
 

@@ -329,7 +329,7 @@ Contributors will be recognized in:
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the GNU GPL v3 License.
+By contributing, you agree that your contributions will be licensed under the MIT License.
 
 ---
 

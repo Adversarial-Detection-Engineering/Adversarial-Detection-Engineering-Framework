@@ -106,7 +106,14 @@ detection:
 
 **Hardened Rule**:
 ```yaml
-<TODO>
+# Flag any bidirectional control character (U+202A-U+202E, U+2066-U+2069).
+# The pattern must contain the ACTUAL codepoint, not the 6-char text "\u202E"
+# (Sigma `contains: '\u202E'` matches those six literal characters and never fires).
+detection:
+  selection:
+    - CommandLine|re: '[\x{202A}-\x{202E}\x{2066}-\x{2069}]'
+    - Image|re: '[\x{202A}-\x{202E}\x{2066}-\x{2069}]'
+  condition: selection
 ```
 
 **Best Practices**:
@@ -120,12 +127,13 @@ detection:
 
 **Example Rules**:
 ```yaml
-# Detect RTL override characters in process execution
+# Detect RTL override characters in process execution.
+# Match the real codepoint via |re — `contains: '\u202E'` matches the literal text, not U+202E.
 detection:
   selection_img:
-    Image|contains: '\u202E'
+    Image|re: '[\x{202A}-\x{202E}\x{2066}-\x{2069}]'
   selection_cmd:
-    CommandLine|contains: '\u202E'
+    CommandLine|re: '[\x{202A}-\x{202E}\x{2066}-\x{2069}]'
   condition: any of selection_*
 ```
 
@@ -182,7 +190,7 @@ detection:
 **Best Practice**:
 - Design rules with boolean replacements in mind
 
-### Mitigation 3: Cover All Binary Alternatives
+### Mitigation 2: Cover All Binary Alternatives
 
 **Problem**: Focusing on one binary (e.g., `curl.exe`) misses alternatives (`wget.exe`, `certutil.exe`, PowerShell, BitsTransfer, etc.).
 

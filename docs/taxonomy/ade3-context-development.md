@@ -72,7 +72,7 @@ Rather than changing the primary malicious action, the attacker shapes the **sur
 - Each command in a pipe generates a separate process creation event
 - No single event contains all the substrings the rule expects
 
-**Result:** In-scope malicious activity bypasses detection without the attacker needing to know the rule exists. This is **unintentional evasion** - a natural consequence of OS behavior.
+**Result:** In-scope malicious activity bypasses detection without the attacker needing to know the rule exists. This is **unintentional evasion** - a natural consequence of OS behavior. (Exception: a wrapping `cmd /c "<pipe>"` puts the whole pipe on the parent `cmd.exe` command line, so a rule scoped to that parent still matches — state the launch context.)
 
 **Related Research:**
 - [Detection Pitfalls by Daniel Koifman](https://detect.fyi/detection-pitfalls-you-might-be-sleeping-on-52b5a3d9a0c8)

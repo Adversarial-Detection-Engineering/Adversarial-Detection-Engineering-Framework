@@ -25,7 +25,7 @@ host.os.type: "windows" and
         "teamviewer.exe" or "apc_Admin.exe" or "apc_host.exe" or "SupremoHelper.exe" or "rfusclient.exe" or
         "spclink.exe" or "smpcview.exe" or "ROMServer.exe" or "strwinclt.exe" or "RPCSuite.exe" or "RemotePCDesktop.exe" or
         "RemotePCService.exe" or "tvn.exe" or "LMIIgnition.exe" or "B4-Service.exe" or "Mikogo-Service.exe" or "AnyDesk.exe" or
-        "Splashtop-streamer.exe" or AA_v*.exe, or "rutserv.exe" or "rutview.exe" or "vncserver.exe" or "vncviewer.exe" or
+        "Splashtop-streamer.exe" or AA_v*.exe or "rutserv.exe" or "rutview.exe" or "vncserver.exe" or "vncviewer.exe" or
         "tvnserver.exe" or "tvnviewer.exe" or "winvnc.exe" or "RemoteDesktopManager.exe" or "LogMeIn.exe" or ScreenConnect*.exe or
         "RemotePC.exe" or "r_server.exe" or "radmin.exe" or "ROMServer.exe" or "ROMViewer.exe" or "DWRCC.exe" or "AeroAdmin.exe" or
         "ISLLightClient.exe" or "ISLLight.exe" or "AteraAgent.exe" or "SRService.exe")

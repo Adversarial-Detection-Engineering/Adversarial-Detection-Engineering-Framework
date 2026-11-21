@@ -103,6 +103,10 @@ command1 && command2
 command1 || command2
 ```
 
+## Caveat: a wrapping cmd.exe carries the whole pipe
+
+The False Negative above assumes each stage is its own top-level process. If the pipe is launched as a single quoted argument — `cmd.exe /c "tasklist | findstr lsass"` — the **wrapping `cmd.exe`** process has the entire pipe on its own `CommandLine`, so a rule scoped to `cmd.exe` with `contains|all` *would* match that one event. The fragmentation gap holds when there is no such wrapping parent: the pipe typed at an interactive shell (the shell is already running; its own command line is just `cmd.exe`), or each stage launched separately. State the launch context when writing or testing the rule, and prefer per-child detection plus parent correlation so both shapes are covered.
+
 ## Related Research
 
 - [Detection Pitfalls by Daniel Koifman](https://detect.fyi/detection-pitfalls-you-might-be-sleeping-on-52b5a3d9a0c8)
