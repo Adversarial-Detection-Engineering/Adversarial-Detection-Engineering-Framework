@@ -8,6 +8,8 @@
 
 Check out the website: [https://adeframework.org/](https://adeframework.org/)
 
+Companies currently using ADE: Adobe, Cribl, Cyberproof, Hefaistos
+
 ## What Is ADE?
 
 Adversarial Detection Engineering (ADE) is the discipline of reasoning about **False Negatives in detection rules**. The ADE Framework provides a modern open-source formalization of **Detection Logic Bugs** - mismatches between what a detection rule *intends* to detect and what it *actually* detects.
