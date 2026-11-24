@@ -128,6 +128,58 @@ Rather than changing the primary malicious action, the attacker shapes the **sur
 - **ADE1-02 Normalization Asymmetry** also produces an empty join, but because the keys differ. Under Limit Saturation the keys match and the row was never retained. To tell them apart, constrain the bounded side to a single host and re-run: if the match appears, the cause is truncation
 - **ADE4-04 Unavailable Field** covers telemetry ceilings (a command line truncated at collection). ADE3-06 is a query-engine ceiling on rows, groups, or keys
 
+---
+
+### ADE3-07: Context Development - Ambient Execution Context
+
+**Definition:** Detection logic keys on an option, target, or behavior expressed in the **command line** (or an equivalent observable field), assuming that the process image plus its arguments are the complete execution identity. A runtime — a shell, interpreter, or utility — also resolves that same input from an **ambient channel that ordinary process telemetry does not record**: an implicit configuration file, an environment variable, or configuration supplied outside the command. The attacker moves the in-scope option or target off the command line and into the ambient channel. The process event looks benign or incomplete while the resolved behavior is unchanged, resulting in a False Negative.
+
+The execution identity the rule should reason about is wider than what it observes:
+
+```text
+behavior = F(image, argv, cwd, environment, implicit config, search order, startup hooks)
+```
+
+A rule that treats `image + argv` as the whole of that function is blind to every other input.
+
+**Why it belongs under ADE3, and not elsewhere:**
+- **Not ADE1 (Reformatting):** the command text the rule matches is not obfuscated — it is simply absent. There is no mutated string to normalize away.
+- **Not ADE2-01 (Omit Alternatives):** an ADE2 bug is closed by enumerating the missing method or binary in the rule. No condition on `argv` closes this one, because the deciding input never reaches `argv`.
+- **Not ADE3-01 / ADE3-05:** process cloning and lineage spoofing poison **one named context field the rule actually reads** (the image name, the parent). Here the rule reads `argv` faithfully; the poisoned context is a channel the rule does not read at all.
+- **Not ADE4-04 (Field Mismapping):** ADE4-04 is a field the rule references that is missing or misnamed. Here the field the rule references (the command line) **is present and correct** — the behavior-deciding input just did not land in it.
+
+It fits ADE3 because the attacker shapes the **surrounding execution context** (environment, configuration provenance) rather than the primary action.
+
+**Validated technique forms** (ambient configuration and environment; see the search-order note below):
+
+| Ambient channel | Stable visible invocation | Context-dependent result |
+|---|---|---|
+| curl implicit config (`CURL_HOME` / `%APPDATA%\_curlrc` / `~/.curlrc`, or `-K <file>`) | `curl https://host/path` | upload (`-T`), POST body (`-d`), extra headers, or output redirection supplied by the config file — **reproduced below** |
+| `NODE_OPTIONS`, `PYTHONPATH`, `PYTHONSTARTUP` | `node app.js` / `python script.py` | a `--require` preload module or startup script runs before the visible program |
+| `GIT_CONFIG_COUNT` + `GIT_CONFIG_KEY_n` / `GIT_CONFIG_VALUE_n`, or `GIT_CONFIG_GLOBAL` | `git <command>` | an ephemeral alias or a `core.*`/hook command executes, with no persistent config-file write |
+
+These share one property: **the process event can look equivalent while the resolved code, options, or behavior differ.**
+
+**Search-order forms are a related but distinct case.** `PATHEXT` ordering, the current working directory, and `PSModulePath` ordering change which same-named artifact resolves. MITRE ATT&CK already classifies these as hijacks under [T1574](https://attack.mitre.org/techniques/T1574/). They become an ADE **detection** bug only when the resolved artifact then satisfies a rule's exclusion or allowlist — which is [ADE4-01 Gate Inversion](ade4-logic-manipulation.md#ade4-01-logic-manipulation---gate-inversion) fed by this context. Keep ADE3-07 scoped to the case where the rule keys on an `argv` option or target that an ambient channel supplies in its place.
+
+**Reproduced — curl ambient configuration** (Windows 11, curl 8.21.0, 2026-11-24). With `CURL_HOME` pointing at a directory holding a `_curlrc`, a bare invocation gained options that never appear on the command line:
+
+```text
+# _curlrc (ambient):  user-agent = "AMBIENT-PROBE-UA"
+#                      header = "X-Ambient: injected"
+
+> curl https://example.com            # only the URL on the command line
+> User-Agent: AMBIENT-PROBE-UA        # injected by the config file
+> X-Ambient: injected                 # injected by the config file
+
+# control, CURL_HOME unset:
+> User-Agent: curl/8.21.0             # no injected header
+```
+
+A user-agent and header prove arbitrary options inject; upload (`-T`) and request-body (`-d`) options inject identically, so a rule that catches curl exfiltration by matching `-T`/`--upload-file`/`-d` on the command line sees none of them. Anchoring instead on the curl process making an outbound connection to an untrusted host is unaffected by where the options came from.
+
+**Status:** ADE3-07 is a repository proposal. The mechanism above is reproduced; a named-rule DLE and three worked examples (per `CONTRIBUTING.md`) are the open evidence items before it is treated as settled.
+
 ## Examples
 
 ### Real-World Detection Logic Bugs
@@ -195,6 +247,13 @@ Rather than changing the primary malicious action, the attacker shapes the **sur
 13. **[Process Events - Identify Low Port Bindings](https://github.com/CrowdStrike/logscale-community-content/blob/main/Log-Sources/CrowdStrike/FLTR/crowdstrike-fltrcore/src/queries/ProcessEvents-IdentifyLowPortBindings.yaml)**
     - `join()` subquery is every `NetworkListenIP4` with `LocalPort<1024` in the estate over 7 days; already set to `limit=200000`, the hard maximum, so it cannot be raised further
     - Platform: CrowdStrike LogScale (FLTR package query)
+
+**ADE3-07 - Ambient Execution Context:**
+
+14. **Curl ambient configuration** (reproduced inline in the subcategory above)
+    - A bare `curl <url>` gains upload, request-body, header, or output options from an implicit `_curlrc` (via `CURL_HOME` / `%APPDATA%` / `~/.curlrc`); none appear on the command line
+    - Platform: Windows / Linux process creation
+    - No public named-rule DLE yet — see the ADE3-07 status note
 
 ## Detection Rule Patterns Vulnerable to ADE3
 
@@ -304,6 +363,25 @@ ParentProcessId / ParentCommandLine used for alerting or suppression
 | sort(count)           (LogScale: 200 rows)
 ```
 
+### ADE3-07 Patterns
+
+**Keying on an option a config file or environment can supply instead:**
+```yaml
+Image|endswith: '\curl.exe'
+CommandLine|contains:
+    - ' -T '          # also set by `upload-file` in _curlrc
+    - ' --upload-file '
+    - ' -d '          # also set by `data` in _curlrc
+```
+
+**Keying on interpreter arguments an environment variable preloads instead:**
+```yaml
+Image|endswith: '\node.exe'
+CommandLine|contains: '--require'   # NODE_OPTIONS=--require <mod> sets it with no argv change
+```
+
+**With** an attacker able to set an environment variable or write an implicit config file at the assumed privilege level (`CURL_HOME`, `NODE_OPTIONS`, `PYTHONPATH`, `GIT_CONFIG_*`, `%APPDATA%\_curlrc`).
+
 ## Why Context Development Is Powerful
 
 **Key Insight:** ADE3 bugs often don't require the attacker to know detection rules exist.
@@ -314,6 +392,7 @@ ParentProcessId / ParentCommandLine used for alerting or suppression
 **ADE3-04:** Piped commands are **standard shell usage** - not intentional evasion
 **ADE3-05:** Parent PID spoofing is a **built-in feature of common C2 frameworks** - one flag, not a bespoke evasion
 **ADE3-06:** Data volume **grows on its own** - rules degrade as the estate grows, and noise speeds it up
+**ADE3-07:** Shells, interpreters, and utilities **read ambient config and environment by design** - moving an option off the command line is ordinary usage, not a bespoke evasion
 
 ## Related Bug Categories
 
@@ -358,5 +437,11 @@ ADE3 often appears alongside:
 - ✅ Is the bounded side filtered only by event type, rather than narrowed toward the records the rule needs?
 - ✅ Could the volume on that side exceed the engine's default limit in your largest environment and search window?
 - ✅ Does a rarity or threshold filter run *after* a group limit that keeps only the top-N?
+
+**For ADE3-07:**
+- ✅ Does the rule key on a command-line option or target that the same tool also accepts from a config file or environment variable (curl config, `NODE_OPTIONS`, `PYTHONPATH`, `GIT_CONFIG_*`)?
+- ✅ Can the attacker set that environment variable or write that implicit config file at the assumed privilege level?
+- ✅ Does the rule capture the working directory, selected environment variables, and the resolved artifact — or only the command token?
+- ✅ Is there a behavioral backstop (network, child process, file, registry) that fires even when the option never reaches the command line?
 
 If you answered "yes" to any category's questions, your rule likely has an ADE3 vulnerability.

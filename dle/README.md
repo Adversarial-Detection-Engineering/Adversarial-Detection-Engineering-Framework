@@ -8,7 +8,7 @@ A catalog of real-world detection rule bypasses arising from ADE Detection Logic
 
 ## Why this exists
 
-Detection rules fail for repeatable, structural reasons. These reasons are found in the [Adversarial Detection Engineering framework (ADE)](https://github.com/Adversarial-Detection-Engineering/Adversarial-Detection-Engineering-Framework/) as 16 bug subcategories across 4 categories.
+Detection rules fail for repeatable, structural reasons. These reasons are found in the [Adversarial Detection Engineering framework (ADE)](https://github.com/Adversarial-Detection-Engineering/Adversarial-Detection-Engineering-Framework/) as 17 bug subcategories across 4 categories.
 
 Today, those failures are discussed informally as “evasion,” “edge cases,” or “bypasses,” but they are rarely documented in a consistent, reusable way. 
 

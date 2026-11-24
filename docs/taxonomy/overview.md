@@ -24,7 +24,7 @@ Other solutions and their rulesets have not yet been reviewed as part of creatin
 
 ## ADE Detection Logic Bug Taxonomy
 
-The full taxonomy consists of 4 categories, and 16 sub-categories
+The full taxonomy consists of 4 categories, and 17 sub-categories
 - Each category is given a label, such as ADE1, ADE2, ...., ADE4.
 - Subcategories are labels with their subcategory number. E.g ADE1-02, ADE3-03 This is for mappings to rules.
 
@@ -43,7 +43,8 @@ The full taxonomy consists of 4 categories, and 16 sub-categories
     ├─ ADE3-03 Timing and Scheduling
     ├─ ADE3-04 Event Fragmentation
     ├─ ADE3-05 Lineage Spoofing
-    └─ ADE3-06 Limit Saturation
+    ├─ ADE3-06 Limit Saturation
+    └─ ADE3-07 Ambient Execution Context
 🌳 ADE4 – Logic Manipulation
     ├─ ADE4-01 Gate Inversion
     ├─ ADE4-02 Conjunction Inversion
@@ -87,6 +88,7 @@ Attacker takes additional steps to **manipulate or poison contextual data** used
 - **[ADE3-04 Event Fragmentation](ade3-context-development.md#ade3-04-context-development---event-fragmentation)**: Shell operators split commands across multiple events
 - **[ADE3-05 Lineage Spoofing](ade3-context-development.md#ade3-05-context-development---lineage-spoofing)**: Falsify the logged parent process that parent-child rules and exclusions trust
 - **[ADE3-06 Limit Saturation](ade3-context-development.md#ade3-06-context-development---limit-saturation)**: Volume past a join, subsearch, group, or sort limit silently truncates the record the rule needed
+- **[ADE3-07 Ambient Execution Context](ade3-context-development.md#ade3-07-context-development---ambient-execution-context)**: An in-scope option or target is supplied through a config file or environment variable the process event never records, so a command-line match sees nothing
 
 ---
 
@@ -114,6 +116,7 @@ Attacker analyzes detection logic as Boolean conditions and manipulates inputs o
 - Piped commands → ADE3-04
 - Parent PID spoofing → ADE3-05
 - Volume or cardinality flooding → ADE3-06
+- Option/target moved off the command line into config or environment → ADE3-07
 - Logic flaws → ADE4
 - Field name/availability drift across sources or backends → ADE4-04
 
@@ -129,4 +132,5 @@ Attacker analyzes detection logic as Boolean conditions and manipulates inputs o
 - Multiple `NOT` → ADE4-01
 - Parent process checks (`ParentImage`, `process.parent.*`) → ADE3-05
 - Subsearches, `groupBy`/`stats` over high-cardinality keys, `sort` without a count → ADE3-06
+- `CommandLine` match on a flag also set by config/env (curl `-T`/`-d`, `NODE_OPTIONS`, `PYTHONPATH`, `GIT_CONFIG_*`) → ADE3-07
 - Sysmon-only fields (`OriginalFileName`), multi-backend Sigma, `not filter` on optional fields → ADE4-04
