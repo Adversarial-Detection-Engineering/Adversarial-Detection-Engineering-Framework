@@ -8,7 +8,7 @@ A catalog of real-world detection rule bypasses arising from ADE Detection Logic
 
 ## Why this exists
 
-Detection rules fail for repeatable, structural reasons. These reasons are found in the [Adversarial Detection Engineering framework (ADE)](https://github.com/Adversarial-Detection-Engineering/Adversarial-Detection-Engineering-Framework/) as 12 bug categories.
+Detection rules fail for repeatable, structural reasons. These reasons are found in the [Adversarial Detection Engineering framework (ADE)](https://github.com/Adversarial-Detection-Engineering/Adversarial-Detection-Engineering-Framework/) as 16 bug subcategories across 4 categories.
 
 Today, those failures are discussed informally as “evasion,” “edge cases,” or “bypasses,” but they are rarely documented in a consistent, reusable way. 
 
@@ -44,17 +44,17 @@ A DLE does **not**:
 
 Each DLE entry contains:
 
-- **DLE ID** (e.g. DLE-2026-00001)
-- **Related ADE** (e.g. ADE3-03 – Timing & Scheduling, ADE2-02 - Versioning)
-- **Affected detection logic** (the specific rule)
-- **Bypass description** (how the rule is bypassed)
-- **Credit** (how the rule is bypassed)
-- **Assumption violated** (what root causes contributed the bugs)
-- **Likelihood** (the likelihood of bypass)
-- **Complexity** (the complexity of bypass)
-- **Impact** (the impact of bypass)
-- **Risk** (the impact of bypass)
-- **Notes / mitigations** (optional)
+- **id** (e.g. DLE-2026-00001)
+- **related_ade** (e.g. ADE3-03 – Timing & Scheduling, ADE2-02 - Versioning)
+- **schema_version**
+- **bypass_description** (how the rule is bypassed)
+- **affected_detection_logic** (the specific rule: name, platform, references)
+- **rule_version** (the rule version assessed, or `unknown`)
+- **credit** (who submitted the bypass)
+- **assumption_violated** (the root cause that produced the bug)
+- **logsource** and **mitre_attack**
+- **complexity** (the complexity of the bypass: Low, Medium, High)
+- **notes** (optional mitigations and context)
 
 
 DLE is intended to evolve through real-world detection engineering experience and constructive disagreement.

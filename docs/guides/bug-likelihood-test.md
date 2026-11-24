@@ -53,6 +53,11 @@ Then, continue on with the Bug Likelihood Test.
       - ADE1‑01 – Reformatting in Actions (Substring Manipulation)
       - Attacker‑controlled string fields enable obfuscation, token splitting, encoding, or delimiter abuse that defeats exact or partial matches.
 
+- [ ] Does the rule join or compare the same entity across tables or branches, where each side transforms the key differently (case, trimming, regex extraction, GUID or domain stripping)?
+
+      - ADE1‑02 – Reformatting in Actions (Normalization Asymmetry)
+      - Logically identical values serialize differently on each side, so the join or equality check fails without error.
+
 - [ ] Does the query include negations (NOT) or conjunctions (AND) whose condition relies on the attacker’s amendable data?
       
       - ADE4‑01 / ADE4‑02 – Logic Manipulation (Gate or Conjunction Inversion)
@@ -67,6 +72,12 @@ Then, continue on with the Bug Likelihood Test.
       
       - ADE3‑02 – Context Development (Aggregation Hijacking)
       - Entity coupling and suppression logic can be gamed to fold malicious activity into existing baselines or suppress alerts.
+
+
+- [ ] Does the rule depend on a time constraint, such as a sequence `maxspan`, a file age check, a lookback window, or a per‑interval rate?
+
+      - ADE3‑03 – Context Development (Timing and Scheduling)
+      - The attacker can space, batch, or delay the in‑scope steps so they fall outside the window, without changing the behavior.
 
 
 - [ ] Does the detection rely on multi substring matching or exact command sequences assuming all substrings appear in a single process creation event?

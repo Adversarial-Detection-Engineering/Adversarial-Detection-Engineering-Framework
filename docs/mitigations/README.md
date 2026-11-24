@@ -40,13 +40,13 @@ detection:
   condition: selection
 ```
 
-**Why This Works**:
-- Sysmon Event ID 15 captures the actual outcome (file marked as downloaded) rather than the process that performed the download
-- The `Zone.Identifier` alternate data stream is set by Windows at the OS level and is consistent across download methods
-- Adversaries cannot easily suppress or manipulate this telemetry without elevated privileges or kernel-level access
+**Why This Helps**:
+- Sysmon Event ID 15 captures an outcome (a file marked as downloaded) rather than the name of the process that performed the download, so renaming or cloning the downloader (ADE3-01) does not affect it
 - **Category**: This falls under **Robust Collection Configuration** as it selects a more reliable data source
 
 **Limitations to Consider**:
+- The `Zone.Identifier` stream is written by the downloading application when it uses the Windows attachment services (browsers, mail clients, some archivers), not by the OS for every download. Command-line downloaders such as `curl.exe`, `Invoke-WebRequest`, and `Start-BitsTransfer` write no `Zone.Identifier` stream, so this rule does **not** replace process- and network-based download rules for those tools; it complements them
+- Because the attacker chooses the downloader, choosing one that writes no Mark of the Web is itself an ADE2-01 bypass of this rule. Treat it as one layer of a download detection family, not as full coverage
 - Requires Sysmon configuration to include Event ID 15
 - May generate high volume on file servers or systems with frequent downloads
 - Does not capture downloads that bypass the Windows attachment manager (e.g., certain archive extractions, some network shares)
@@ -118,7 +118,7 @@ detection:
 
 **Best Practices**:
 1. **Prioritize Behavioral Detection**: Focus on what the process does (network connections, file modifications, registry changes) rather than just its name
-2. **Use Hash-Based Detection**: Where applicable, match on file hashes (Sysmon Event ID 1 includes hashes) or use the field "OriginalFilename"
+2. **Match on Fields the Attacker Cannot Rename**: On Windows, use `OriginalFileName` (from the PE version resource, present in Sysmon Event ID 1) alongside `Image`, so a renamed copy still matches. Avoid file hashes: they identify one build of one tool (an indicator of compromise) and break on the next recompile. `OriginalFileName` is not populated in Security Event 4688 or many EDR tables; see [ADE4-04](../taxonomy/ade4-logic-manipulation.md#ade4-04-logic-manipulation---field-mismapping--semantics)
 3. **Check for Unicode Anomalies**: Flag processes with RTL override characters or other unusual Unicode in paths
 
 ### Mitigation 3: Defense-in-Depth Rules for String Manipulation
@@ -205,23 +205,23 @@ detection:
 
 **Bug Type**: Attacks that manipulate the execution context to evade detection rules that assume specific parent processes, user contexts, or environmental conditions.
 
-### Mitigation 1: Validate Full Process Ancestry
+### Mitigation 1: Keep Lineage to Two Levels and Anchor on Behavior
 
-**Problem**: Rules that only check the immediate parent process miss deeper process tree manipulation.
+**Problem**: Rules that lean on process ancestry inherit every weakness of the lineage fields. Each extra level is another field the attacker can shape (by inserting an intermediate process or spoofing a parent, ADE3-05) and another field that some backends do not populate (ADE4-04). Grandparent fields are especially fragile: not every source carries them, and a single intermediate process shifts the chain.
 
-**Best Practice**:
+**Best Practice**: Limit lineage to the acting process and its immediate parent, and put the weight of the rule on what the process does (its command line, network, file, or registry activity) rather than on how deep the ancestry check goes.
 ```yaml
 detection:
   selection:
     Image|endswith: '\powershell.exe'
-    # Check multiple levels of ancestry if available
+    # Two levels only: the acting process and its immediate parent
     ParentImage|endswith:
       - '\cmd.exe'
       - '\wscript.exe'
-    # Or check grandparent in systems that support it
-    # GrandparentImage|endswith: '\suspicious.exe'
   condition: selection
 ```
+
+Do not extend the check to grandparent fields. Where a parent relationship is critical, corroborate it with a source that records the real creator (see Mitigation 3, Don't Treat Reported Parent Lineage as Ground Truth) instead.
 
 ### Mitigation 2: Fragmentation
 
@@ -311,20 +311,20 @@ detection:
     CommandLine|contains: '-enc'
   filter:
     User: 'SYSTEM'
-  condition: selection and not filter  # Can be bypassed by running as different user
+  condition: selection and not filter  # Bypassed by running as SYSTEM, e.g. after an RCE exploit
 
 # Better
 detection:
   selection:
     Image|endswith: '\powershell.exe'
     CommandLine|contains: '-enc'
-  suspicious_user:
-    User|contains:
-      - 'Administrator'
-      - 'Guest'
-    # Explicit list rather than negation
-  condition: selection and suspicious_user
+  # No account filter: excluding SYSTEM hides the context that unauthenticated
+  # RCE and service-level persistence run in (ADE4-03). An allowlist of
+  # "suspicious" accounts is no better: it omits every account not listed (ADE2).
+  condition: selection
 ```
+
+If the rule is too noisy without the filter, tune on the specific benign activity (the exact command line of the known management script), not on the account it runs as.
 
 ### Mitigation 2: Avoid Overly Specific Filters
 

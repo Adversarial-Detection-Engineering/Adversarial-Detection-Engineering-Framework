@@ -8,7 +8,7 @@ Rulesets currently informing the taxonomy:
 |:-----------------------|:---------|:------------|:------------|:------------|
 | AWS (CloudTrail)                        | ❌  | ❌           | ❌                      | ❌                            |
 | Windows PowerShell Script Block Logging | ❌  | ❌           | ❌                      | ❌                            |
-| Linux                                  | ❌  | ✅           | ❌                      | ❌                            |
+| Linux                                  | ❌  | ❌           | ❌                      | ❌                            |
 | Azure                                  | 🟡 TBC | ❌          | ❌                      | N/A                           |
 | O365                                   | 🟡 TBC | 🟡 TBC          | ❌                      | N/A                           |
 | LLM                                    | 🟡 TBC | 🟡 TBC          | ❌                      | N/A                           |

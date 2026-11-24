@@ -20,7 +20,7 @@ detection:
 
 ## The Bug
 
-The detection logic searches for the presence of `Net.WebClient`, `.DownloadString(` and `.DownloadFile(` methods in script block logging.
+The detection logic searches for the presence of `Net.WebClient`, `.DownloadString(` and `.DownloadFile(` methods in the `Data` field of the classic PowerShell log (`ps_classic_start`).
 
 **Hypothesis Test:**
 - Condition A: substring `Net.WebClient` exists, AND

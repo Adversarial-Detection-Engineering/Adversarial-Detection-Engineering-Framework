@@ -107,12 +107,12 @@ level: medium
 
 1. What is the **scope**?:
 	- Powershell scripts downloading a file from a remote host (internet or local), **scope** is supported by the presence of:
-	    - Description states *“Detect when a powershell script downloads a file"*
+	    - Description states *"Detects suspicious PowerShell download command"*
 	    - MITRE ATT&CK Mapping of [T1059.001 Command & Scripting Interpreter - PowerShell](https://attack.mitre.org/techniques/T1059/001/)
 2. What is **detection logic**'s hypothesis test?
-	- The **detection logic** itself searches for the presence of `Web.Client`, `.DownloadString(` and `.DownloadFile(` methods in script block logging.
+	- The **detection logic** itself searches for the presence of `Net.WebClient`, `.DownloadString(` and `.DownloadFile(` methods in the `Data` field of the classic PowerShell log (`ps_classic_start`).
 	- Therefore the `Alternative Hypothesis` is: *A file is downloaded by a powershell script when*:
-		- Condition A: substring `Web.Client` exists, AND 
+		- Condition A: substring `Net.WebClient` exists, AND 
 			- Condition B: substring `.DownloadString(` exists, OR
 			- Condition C: substring `.DownloadFile(` exists
 		- Can be understood as `Hit when A AND (B OR C) == True`
@@ -186,9 +186,9 @@ Set-Content -Path "DIRECTORY_TO_WRITE_TO\evil.txt" -Value $file
 ### Fixing the bug
 
 Recall the hypothesis test:
-- Condition A: substring `Web.Client` exists, AND 
-- Condition B: substring `.DownloadString` exists, OR
-- Condition C: substring `.DownloadFile` exists
+- Condition A: substring `Net.WebClient` exists, AND 
+- Condition B: substring `.DownloadString(` exists, OR
+- Condition C: substring `.DownloadFile(` exists
 - Can be understood as `Hit when A AND (B OR C) == True`
 
 In the example, there were two bugs.
@@ -198,7 +198,7 @@ In the example, there were two bugs.
 2. The omission of other methods in powershell to download files.
 		- `ADE Bug Category: Omit Alternative Methods - Method/Binary`
 
-The key issue that results in these was the chaining of `Web.Client` prior to the `OR` statement `".DownloadString(" OR ".DownloadFile("`. Because we know that `.DownloadString(` and `.DownloadFile(` can be obfuscated or replaced very easily in classic powershell, even without the `.` and `(` excluded, we don't need to worry about obfuscating `Web.Client`. according to the [Sigma search specification](https://github.com/SigmaHQ/sigma-specification/blob/main/specification/sigma-rules-specification.md).
+The key issue that results in these was the chaining of `Net.WebClient` prior to the `OR` statement `".DownloadString(" OR ".DownloadFile("`. Because `.DownloadString(` and `.DownloadFile(` can be obfuscated or replaced very easily in classic PowerShell, even with the `.` and `(` characters removed from the match, an attacker never needs to obfuscate `Net.WebClient`: under `all of selection_*` (see the [Sigma search specification](https://github.com/SigmaHQ/sigma-specification/blob/main/specification/sigma-rules-specification.md)), breaking either selection is enough to suppress the hit.
 
 The fastest fix to this is to change the condition to one of:
 ```yaml
@@ -208,7 +208,7 @@ or
 ```yaml
 condition: selection_webclient or selection_download
 ```
-However, there may be some cases where `Web.Client` can be reformatted or alternative API/Methods be used. See "Fixing the bug" above for a detailed outline on how the Sigma rule [Potential AMSI Bypass Script Using NULL Bits](https://github.com/SigmaHQ/sigma/blob/master/rules/windows/powershell/powershell_script/posh_ps_amsi_null_bits_bypass.yml) picks up these actions, but also has it's own bugs! 
+However, there may be some cases where `Net.WebClient` can be reformatted or alternative APIs/methods be used, so the condition change narrows the bug rather than closing it. For a rule that takes a different approach to these actions, and has bugs of its own, see the Sigma rule [Potential AMSI Bypass Script Using NULL Bits](https://github.com/SigmaHQ/sigma/blob/master/rules/windows/powershell/powershell_script/posh_ps_amsi_null_bits_bypass.yml).
 
 
 ### Continue to [Detection Logic Bug Taxonomy](../taxonomy/overview.md)

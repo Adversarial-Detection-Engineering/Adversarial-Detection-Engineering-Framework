@@ -77,7 +77,7 @@ Again, this misses:
 
 **The New Way (Immutable Artifact):**
 
-To enable RDP on Windows, the registry value `HKLM\System\CurrentControlSet\Control\Terminal Server\fDenyTSConnections` *must* be set to `0`. This is non-negotiable.
+To enable RDP on Windows, the registry value `fDenyTSConnections` *must* be set to `0`. It lives in two places: the local setting at `HKLM\System\CurrentControlSet\Control\Terminal Server`, and the Group Policy setting at `HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services`, which takes precedence when present. A rule that watches only the first key omits the second location (ADE2-03).
 
 Here's what Metasploit does:
 ```ruby
@@ -96,7 +96,9 @@ Different tools, different syntax—but both produce the exact same registry mod
 ```
 Alert when:
   - Registry value "fDenyTSConnections" is set to 0
-  - In key: HKLM\System\CurrentControlSet\Control\Terminal Server
+  - In either key:
+      HKLM\System\CurrentControlSet\Control\Terminal Server
+      HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services
   - Exclude accordingly
 ```
 
