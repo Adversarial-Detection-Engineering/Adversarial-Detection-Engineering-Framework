@@ -8,7 +8,7 @@
 
 Check out the website: [https://adeframework.org/](https://adeframework.org/)
 
-Companies currently using ADE: Adobe, Cribl, Cyberproof, Hefaistos, Nebulock
+Companies currently using ADE: Adobe, Cribl, Cyberproof, Hefaistos, Nebulock, HSBC
 
 ## What Is ADE?
 
