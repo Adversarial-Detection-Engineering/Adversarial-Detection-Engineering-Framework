@@ -98,6 +98,12 @@ Then, continue on with the Bug Likelihood Test.
       - Past the engine's limit (Splunk `join` 50,000 rows; LogScale `groupBy()` 20,000 groups, `join()` 100,000 rows) the set is silently truncated, and the record the rule needed may not survive. Volume growth or attacker‑generated noise triggers it.
 
 
+- [ ] Does the rule key on a command‑line option or target that the same tool also accepts from a config file or environment variable (curl config, `NODE_OPTIONS`, `PYTHONPATH`, `GIT_CONFIG_*`)?
+
+      - ADE3‑07 – Context Development (Ambient Execution Context)
+      - The attacker moves the in‑scope option off the command line into an ambient channel the process event does not record, so a `CommandLine` match sees nothing while the behavior is unchanged.
+
+
 - [ ] Does the rule reference a field that some target log sources or backends name differently, don’t populate, or that sits inside a `not` filter?
 
       - ADE4‑04 – Logic Manipulation (Field Mismapping & Semantics)
